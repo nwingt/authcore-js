@@ -1,0 +1,21 @@
+stages:
+  - test
+
+test authcore-js:
+  stage: test
+  image: node:lts
+  before_script:
+    - yarn install
+  script:
+    - yarn lint
+    - yarn test
+  coverage: '/Lines\s*:\s*(\d*\.?\d+)%/'
+  artifacts:
+    when: always
+    paths:
+      - coverage
+      - mochawesome-report
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - node_modules/

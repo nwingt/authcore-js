@@ -1,0 +1,9 @@
+{
+  "roles": [
+    {
+      "id": "2",
+      "name": "authcore.admin",
+      "system_role": true
+    }
+  ]
+}
