@@ -1,7 +1,8 @@
 stages:
   - test
+  - publish
 
-test authcore-js:
+test:
   stage: test
   image: node:lts
   before_script:
@@ -19,3 +20,21 @@ test authcore-js:
     key: ${CI_JOB_NAME}
     paths:
       - node_modules/
+
+pages:
+  stage: publish
+  image: node:lts
+  before_script:
+    - yarn install
+  script:
+    - yarn run doc
+    - mv doc public
+  artifacts:
+    paths:
+      - public
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - node_modules/
+  only:
+    - master
