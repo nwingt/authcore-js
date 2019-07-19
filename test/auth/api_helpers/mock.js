@@ -1,6 +1,6 @@
 const nock = require('nock')
 
-function mockAPI (steps) {
+function mockAPI(steps) {
   nock.cleanAll()
   steps.forEach(function (step) {
     let { type, count } = step
@@ -9,7 +9,7 @@ function mockAPI (steps) {
       case 'SwaggerClient':
         nock('http://0.0.0.0:13337').get('/api/authapi/authcore.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../../authcore/api/authapi/authcore.swagger.json`,
+            200, `${__dirname}/../../authcore.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
@@ -268,7 +268,7 @@ function mockAPI (steps) {
       case 'SwaggerClientForHTTPS':
         nock('https://0.0.0.0:13338').get('/api/authapi/authcore.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../../authcore/api/authapi/authcore.swagger.json`,
+            200, `${__dirname}/../../authcore.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break

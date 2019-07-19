@@ -1,6 +1,6 @@
 const nock = require('nock')
 
-function mockAPI (steps) {
+function mockAPI(steps) {
   nock.cleanAll()
   steps.forEach(function (step) {
     let { type, count } = step
@@ -9,21 +9,21 @@ function mockAPI (steps) {
       case 'SwaggerClient':
         nock('http://0.0.0.0:13337').get('/api/authapi/authcore.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../authcore/api/authapi/authcore.swagger.json`,
+            200, `${__dirname}/../authcore.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
       case 'SwaggerMgmtClient':
         nock('http://0.0.0.0:13337').get('/api/managementapi/management.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../authcore/api/managementapi/management.swagger.json`,
+            200, `${__dirname}/../management.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
       case 'SwaggerKeyVaultClient':
         nock('http://0.0.0.0:13337').get('/api/keyvaultapi/keyvault.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../authcore/api/keyvaultapi/keyvault.swagger.json`,
+            200, `${__dirname}/../keyvault.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
@@ -429,14 +429,14 @@ function mockAPI (steps) {
       case 'SwaggerClientForHTTPS':
         nock('https://0.0.0.0:13338').get('/api/authapi/authcore.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../authcore/api/authapi/authcore.swagger.json`,
+            200, `${__dirname}/../authcore.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
       case 'SwaggerMgmtClientForHTTPS':
         nock('https://0.0.0.0:13338').get('/api/managementapi/management.swagger.json').times(count)
           .replyWithFile(
-            200, `${__dirname}/../../../authcore/api/managementapi/management.swagger.json`,
+            200, `${__dirname}/../management.swagger.json`,
             { 'Content-Type': 'application/json' }
           )
         break
