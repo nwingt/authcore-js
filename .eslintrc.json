@@ -5,12 +5,17 @@
     "browser": true,
     "es6": true
   },
+  "plugins": [
+    "jsdoc"
+  ],
   "extends": [
     "standard",
-    "eslint:recommended"
+    "eslint:recommended",
+    "plugin:jsdoc/recommended"
   ],
   "rules": {
-    "no-console": "off"
+    "no-console": "off",
+    "jsdoc/require-description-complete-sentence": 1
   },
   "parserOptions": {
     "ecmaVersion": 2017
