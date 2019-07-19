@@ -3,21 +3,29 @@ const BigNumber = require('bignumber.js')
 /**
  * Converts a string to buffer.
  *
- * Example: `fromString('Hello world') === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {string} payload
+ * @private
+ * @param {string} str String to-be converted.
+ * @example
+ * fromString('Hello world')
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
+ * @returns {Buffer} The buffer that is converted from the string.
  */
-function fromString (payload) {
-  return Buffer.from(payload)
+function fromString (str) {
+  return Buffer.from(str)
 }
 
 /**
  * Converts an integer to buffer.
  *
- * Example: `fromInt('87521618088882671231069284') === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {string} payload
+ * @private
+ * @param {BigNumber} int Integer to-be converted.
+ * @example
+ * fromBigNumber('87521618088882671231069284')
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
+ * @returns {Buffer} The buffer that is converted from the integer.
  */
-function fromInt (payload) {
-  const hexPayload = new BigNumber(payload).toString(16)
+function fromBigNumber (int) {
+  const hexPayload = int.toString(16)
   const pad = hexPayload.length % 2
   return fromHex('0'.repeat(pad) + hexPayload)
 }
@@ -25,113 +33,153 @@ function fromInt (payload) {
 /**
  * Converts a hexadecimal string to buffer.
  *
- * Example: `fromHex('48656c6c6f20776f726c64') === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {string} payload
+ * @private
+ * @param {string} hex Hexadecimal string to-be converted.
+ * @example
+ * fromHex('48656c6c6f20776f726c64')
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64> 
+ * @returns {Buffer} The buffer that is converted from the hexadecimal string.
  */
-function fromHex (payload) {
-  return Buffer.from(payload, 'hex')
+function fromHex (hex) {
+  return Buffer.from(hex, 'hex')
 }
 
 /**
- * Converts a base64 string to buffer.
+ * Converts a base64-encoded string to buffer.
  *
- * Example: `fromBase64('SGVsbG8gd29ybGQ=') === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {string} payload
+ * @private
+ * @param {string} str Base64-encoded string to-be converted.
+ * @example
+ * fromBase64('SGVsbG8gd29ybGQ=')
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
+ * @returns {Buffer} The buffer that is converted from the base64-encoded string.
  */
-function fromBase64 (payload) {
-  return Buffer.from(payload, 'base64')
+function fromBase64 (str) {
+  return Buffer.from(str, 'base64')
 }
 
 /**
- * Converts an URL-safe base64 string to buffer.
+ * Converts an URL-safe base64-encoded string to buffer.
  *
- * Example: `fromBase64URLSafe('SGVsbG8gd29ybGQ') === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {string} payload
+ * @private
+ * @param {string} str URL-safe base64-encoded string to-be converted.
+ * @example
+ * fromBase64URLSafe('SGVsbG8gd29ybGQ')
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
+ * @returns {Buffer} The buffer that is URL-safe base64-encoded from the string.
  */
-function fromBase64URLSafe (payload) {
-  const pad = (4 - payload.length % 4) % 4
-  const base64Payload = payload.replace(/_/g, '/').replace(/-/g, '+') + '='.repeat(pad)
+function fromBase64URLSafe (str) {
+  const pad = (4 - str.length % 4) % 4
+  const base64Payload = str.replace(/_/g, '/').replace(/-/g, '+') + '='.repeat(pad)
   return fromBase64(base64Payload)
 }
 
 /**
  * Converts an uint8 array to buffer.
  *
- * Example: `fromUint8Array([72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]) === <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>`
- * @param {Uint8Array} payload
+ * @private
+ * @param {Uint8Array} arr Uint8 array to-be converted.
+ * @example
+ * fromUint8Array([72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100])
+ * // <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
+ * @returns {Buffer} The buffer that is converted from the uint8 array.
  */
-function fromUint8Array (payload) {
-  return Buffer.from(payload)
+function fromUint8Array (arr) {
+  return Buffer.from(arr)
 }
 
 /**
  * Converts a buffer to a string.
  *
- * Example: `toString(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === 'Hello world'`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toString(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns 'Hello world'
+ * @returns {string} The string that is converted from the buffer.
  */
-function toString (buffer) {
-  return buffer.toString()
+function toString (buf) {
+  return buf.toString()
 }
 
 /**
- * Converts a buffer to an integer.
+ * Converts a buffer to an big number.
  *
- * Example: `toInt(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === '87521618088882671231069284'`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toBigNumber(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns '87521618088882671231069284'
+ * @returns {BigNumber} The integer that is converted from the buffer.
  */
-function toInt (buffer) {
-  return new BigNumber(toHex(buffer), 16).toString(10)
+function toBigNumber (buf) {
+  return new BigNumber(toHex(buf), 16)
 }
 
 /**
  * Converts a buffer to a hexadecimal string.
  *
- * Example: `toHex(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === '48656c6c6f20776f726c64'`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toHex(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns '48656c6c6f20776f726c64'
+ * @returns {string} The hexadecimal string that is converted from the buffer.
  */
-function toHex (buffer) {
-  return buffer.toString('hex')
+function toHex (buf) {
+  return buf.toString('hex')
 }
 
 /**
- * Converts a buffer to a base64 string.
+ * Converts a buffer to a base64-encoded string.
  *
- * Example: `toBase64(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === 'SGVsbG8gd29ybGQ='`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toBase64(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns 'SGVsbG8gd29ybGQ='
+ * @returns {string} The base64-encoded string that is converted from the buffer.
  */
-function toBase64 (buffer) {
-  return buffer.toString('base64')
+function toBase64 (buf) {
+  return buf.toString('base64')
 }
 
 /**
- * Converts a buffer to an URL-safe base64 string.
+ * Converts a buffer to an URL-safe base64-encoded string.
  *
- * Example: `toBase64URLSafe(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === 'SGVsbG8gd29ybGQ'`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toBase64URLSafe(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns 'SGVsbG8gd29ybGQ'
+ * @returns {string} The URL-safe base64-encoded string that is converted from the buffer.
  */
-function toBase64URLSafe (buffer) {
-  return toBase64(buffer).replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '')
+function toBase64URLSafe (buf) {
+  return toBase64(buf).replace(/\//g, '_').replace(/\+/g, '-').replace(/=/g, '')
 }
 
 /**
  * Converts a buffer to an uint8 array.
  *
- * Example: `toUint8Array(<Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>) === [72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100])`
- * @param {Buffer} buffer
+ * @private
+ * @param {Buffer} buf Buffer to-be converted.
+ * @example
+ * toUint8Array(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * // returns [72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
+ * @returns {Uint8Array} The uint8 array that is converted from the buffer.
  */
-function toUint8Array (buffer) {
-  return buffer.toJSON().data
+function toUint8Array (buf) {
+  return buf.toJSON().data
 }
 
 exports.fromString = fromString
-exports.fromInt = fromInt
+exports.fromBigNumber = fromBigNumber
 exports.fromHex = fromHex
 exports.fromBase64 = fromBase64
 exports.fromBase64URLSafe = fromBase64URLSafe
 exports.fromUint8Array = fromUint8Array
 exports.toString = toString
-exports.toInt = toInt
+exports.toBigNumber = toBigNumber
 exports.toHex = toHex
 exports.toBase64 = toBase64
 exports.toBase64URLSafe = toBase64URLSafe

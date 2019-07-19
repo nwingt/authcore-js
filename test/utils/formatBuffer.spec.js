@@ -1,12 +1,13 @@
 /* global suite, test */
 const { assert } = require('chai')
 
+const BigNumber = require('bignumber.js')
 const formatBuffer = require('../../src/utils/formatBuffer.js')
 
 const testCases = [{
   // Sanity check
   string: 'Hello world',
-  int: '87521618088882671231069284',
+  bn: new BigNumber('87521618088882671231069284'),
   hex: '48656c6c6f20776f726c64',
   base64: 'SGVsbG8gd29ybGQ=',
   base64URLSafe: 'SGVsbG8gd29ybGQ',
@@ -15,7 +16,7 @@ const testCases = [{
 }, {
   // URL-safe base64 special character: / <-> _
   string: '???????',
-  int: '17802464409370431',
+  bn: new BigNumber('17802464409370431'),
   hex: '3f3f3f3f3f3f3f',
   base64: 'Pz8/Pz8/Pw==',
   base64URLSafe: 'Pz8_Pz8_Pw',
@@ -24,7 +25,9 @@ const testCases = [{
 }, {
   // URL-safe base64 special character: + <-> -
   string: '<html><body>Hello world</body></html>',
-  int: '30042315264816617938695411903798062776151130353301024403808825935477214905348062102514750',
+  bn:
+    new BigNumber('30042315264816617938695411903798062776151130353301024403808825935477214905348' +
+    '062102514750'),
   hex: '3c68746d6c3e3c626f64793e48656c6c6f20776f726c643c2f626f64793e3c2f68746d6c3e',
   base64: 'PGh0bWw+PGJvZHk+SGVsbG8gd29ybGQ8L2JvZHk+PC9odG1sPg==',
   base64URLSafe: 'PGh0bWw-PGJvZHk-SGVsbG8gd29ybGQ8L2JvZHk-PC9odG1sPg',
@@ -36,7 +39,7 @@ const testCases = [{
 }, {
   // Needs to add a prefix-0 for integer-to-hexadecimal conversion
   string: '\n',
-  int: '10',
+  bn: new BigNumber('10'),
   hex: '0a',
   base64: 'Cg==',
   base64URLSafe: 'Cg',
@@ -44,7 +47,7 @@ const testCases = [{
   buffer: Buffer.from([10])
 }, {
   string: '🤷', // :shrug:
-  int: '4036994231',
+  bn: new BigNumber('4036994231'),
   hex: 'f09fa4b7',
   base64: '8J+ktw==',
   base64URLSafe: '8J-ktw',
@@ -56,13 +59,13 @@ const testCases = [{
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed vitae posuere ipsum. ' +
     'Curabitur efficitur, risus vitae mattis euismod, lectus ligula bibendum nulla, non ' +
     'volutpat tortor tellus non sapien.',
-  int:
-    '5185699294144191575153278088870406822426588043237058677276812243545361658605906956268293020' +
-    '4639672873323550153307131815246582189673130750646206446556260213702578801862998001062056672' +
-    '9420267414631292686860253501087559886788023746264783466984243250273588699089956644822722628' +
-    '7320166012039751901244610660012864053571501372744951883407075564279322806599876676662690493' +
-    '7241583716845066653738176498874182747932155977933588599429301125633839137984604617662421950' +
-    '340019428361719303728686',
+  bn:
+    new BigNumber('51856992941441915751532780888704068224265880432370586772768122435453616586059' +
+    '0695626829302046396728733235501533071318152465821896731307506462064465562602137025788018629' +
+    '9800106205667294202674146312926868602535010875598867880237462647834669842432502735886990899' +
+    '5664482272262873201660120397519012446106600128640535715013727449518834070755642793228065998' +
+    '7667666269049372415837168450666537381764988741827479321559779335885994293011256338391379846' +
+    '04617662421950340019428361719303728686'),
   hex:
     '4c6f72656d20697073756d20646f6c6f722073697420616d65742c20636f6e73656374657475722061646970697' +
     '363696e6720656c69742e2053656420766974616520706f737565726520697073756d2e20437572616269747572' +
@@ -111,11 +114,11 @@ suite('utils/formatBuffer.js', function () {
       })
     })
   })
-  suite('fromInt', function () {
-    const fn = formatBuffer.fromInt
-    test('should be able to convert integer to buffer correctly', function () {
+  suite('fromBigNumber', function () {
+    const fn = formatBuffer.fromBigNumber
+    test('should be able to convert big number to buffer correctly', function () {
       testCases.forEach(function (testCase) {
-        const actualOutput = fn(testCase.int)
+        const actualOutput = fn(testCase.bn)
         assert.instanceOf(actualOutput, Buffer)
         assert.equal(
           actualOutput.compare(testCase.buffer), 0,
@@ -187,13 +190,13 @@ suite('utils/formatBuffer.js', function () {
       })
     })
   })
-  suite('toInt', function () {
-    const fn = formatBuffer.toInt
-    test('should be able to convert buffer to integer correctly', function () {
+  suite('toBigNumber', function () {
+    const fn = formatBuffer.toBigNumber
+    test('should be able to convert buffer to big number correctly', function () {
       testCases.forEach(function (testCase) {
         const actualOutput = fn(testCase.buffer)
-        assert.typeOf(actualOutput, 'string')
-        assert.equal(actualOutput, testCase.int)
+        assert(actualOutput instanceof BigNumber)
+        assert.equal(actualOutput.toString(10), testCase.bn.toString(10))
       })
     })
   })

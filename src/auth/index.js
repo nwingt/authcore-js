@@ -8,27 +8,36 @@ const formatBuffer = require('../utils/formatBuffer.js')
 const unicodeNorm = require('../utils/unicodeNorm.js')
 
 /**
- * Class interacting between AuthCore Web (and corresponding web clients) and auth backend.
- * Wrap interactive steps into functions.
- *
- * `config` is an object that contains:
- * 1. `apiBaseURL`: the base URL for the API endpoint.
- * 2. `callbacks`: the callback functions, listed below:
- *  - `unauthenticated`: callback when an user calls an API while not authenticated.
- * 3. `accessToken`: the access token of the user for the authenticated APIs.
+ * The class interacting between web client and AuthCore AuthAPI server.
+ * 
+ * @public
+ * @param {object} config
+ * @param {string} config.apiBaseURL The base URL for the Authcore instance.
+ * @param {object} config.callbacks The set of callback functions to-be called.
+ * @param {Function} config.callbacks.unauthenticated The callback function when a user is
+ *        unauthenticated.
+ * @param {string} config.accessToken The access token of the user.
+ * @example
+ * const authClient = await new AuthCoreAuthClient({
+ *   apiBaseURL: 'https://auth.example.com',
+ *   callbacks: {
+ *     unauthenticated: function () {
+ *       alert('unauthenticated!')
+ *     }
+ *   },
+ *   accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJle...'
+ * })
  */
 class AuthCoreAuthClient {
   constructor (config) {
     return new Promise(async (resolve, reject) => {
       this.config = config
 
-      this.temporaryToken = undefined // the temporary token.
-      this.deviceToken = undefined // the device token.
-
-      this.handle = undefined // the user handle
-
-      // Challenge for SECURE_REMOTE_PASSWORD
+      this.temporaryToken = undefined
+      this.deviceToken = undefined
+      this.handle = undefined
       this.passwordChallenge = undefined
+
       // Set accessToken into API
       await this.setAccessToken(config.accessToken)
 
@@ -37,11 +46,901 @@ class AuthCoreAuthClient {
   }
 
   /**
-   * Constructs Swagger auth client
-   * Including interceptor for unauthorized and unauthenticated cases to run
-   * callbacks from client implementation.
+   * Sets the access token and refreshes the Swagger client.
+   * 
+   * @public
+   * @param {string} accessToken The access token of the user.
    */
-  async getSwaggerAuthClientAsync () {
+  async setAccessToken (accessToken) {
+    this.config.accessToken = accessToken
+    await this._getSwaggerClient()
+  }
+
+  /**
+   * Gets the access token.
+   * 
+   * @public
+   * @returns {string} The access token of the user.
+   */
+  getAccessToken () {
+    return this.config.accessToken
+  }
+
+
+  /**
+   * Creates a new authentication flow by requesting a password challenge from the server.
+   * 
+   * @public
+   * @param {string} handle A handle of a user. Could be username, email address or phone number.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async startAuthentication (handle) {
+    const { AuthService } = this
+
+    const startAuthenticationResponse = await AuthService.StartAuthentication({
+      'body': {
+        'user_handle': handle
+      }
+    })
+    const startAuthenticationResBody = startAuthenticationResponse.body
+
+    this.handle = handle
+    this.temporaryToken = startAuthenticationResBody['temporary_token']
+    this._updateChallenges(startAuthenticationResBody)
+
+    return startAuthenticationResBody
+  }
+
+  /**
+   * Authenticates a user by secure remote password (SRP).
+   * 
+   * @public
+   * @param {string} password The password of the user.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async authenticateWithSRP (password) {
+    const { AuthService, handle, passwordChallenge, temporaryToken } = this
+
+    const passwordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
+    const challengeToken = passwordChallenge['token']
+    const B = formatBuffer.fromBase64(passwordChallenge['B'])
+
+    const hashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(password)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { A, M1 } = await srp.getAandM1(handle, hashedPassword, passwordSalt, B)
+    const authenticateResponse = await AuthService.Authenticate({
+      'body': {
+        'temporary_token': temporaryToken,
+        'password_response': {
+          'challenge_token': challengeToken,
+          'M1': formatBuffer.toBase64(M1),
+          'A': formatBuffer.toBase64(A)
+        }
+      }
+    })
+    const authenticateResBody = authenticateResponse.body
+
+    this._updateChallenges(authenticateResBody)
+    return authenticateResBody
+  }
+
+  /**
+   * Authenticates a user by time-based one time password (TOTP).
+   * 
+   * @public
+   * @param {string} pin The PIN received in the authenticator device of the user.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async authenticateWithTOTP (pin) {
+    const { AuthService, temporaryToken } = this
+
+    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
+      'body': {
+        'temporary_token': temporaryToken,
+        'challenge': 'TIME_BASED_ONE_TIME_PASSWORD',
+        'answer': pin
+      }
+    })
+    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
+
+    this._updateChallenges(authenticateSecondFactorResBody)
+    return authenticateSecondFactorResBody
+  }
+
+  /**
+   * Requests a SMS for the second-factor authentication using SMS.
+   * 
+   * @public
+   */
+  async startAuthenticateSMS () {
+    const { AuthService, temporaryToken } = this
+    await AuthService.StartAuthenticateSecondFactor({
+      'body': {
+        'temporary_token': temporaryToken,
+        'challenge': 'SMS_CODE'
+      }
+    })
+  }
+
+  /**
+   * Authenticates a user by verifying the authentication code from SMS.
+   * 
+   * @public
+   * @param {string} code The SMS code received by the authenticating phone number of the user.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async authenticateWithSMS (code) {
+    const { AuthService, temporaryToken } = this
+
+    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
+      'body': {
+        'temporary_token': temporaryToken,
+        'challenge': 'SMS_CODE',
+        'answer': code
+      }
+    })
+    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
+
+    this._updateChallenges(authenticateSecondFactorResBody)
+    return authenticateSecondFactorResBody
+  }
+
+  /**
+   * Authenticates a user by the backup code.
+   * 
+   * @public
+   * @param {string} code The backup code of the user.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async authenticateWithBackupCode (code) {
+    const { AuthService, temporaryToken } = this
+
+    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
+      'body': {
+        'temporary_token': temporaryToken,
+        'challenge': 'BACKUP_CODE',
+        'answer': code
+      }
+    })
+    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
+
+    this._updateChallenges(authenticateSecondFactorResBody)
+    return authenticateSecondFactorResBody
+  }
+
+  /**
+   * Creates an access token from the authorization token.
+   * 
+   * @public
+   * @param {string} authorizationToken A one-use token that is used to generate refresh token and
+   *        access token.
+   * @returns {AccessToken} The access token.
+   */
+  async createAccessToken (authorizationToken) {
+    const { AuthService } = this
+
+    const createAccessTokenResponse = await AuthService.CreateAccessToken({
+      'body': {
+        'grant_type': 'AUTHORIZATION_TOKEN',
+        'token': authorizationToken
+      }
+    })
+    const createAccessTokenResBody = createAccessTokenResponse.body
+
+    await this.setAccessToken(createAccessTokenResBody['access_token'])
+    return createAccessTokenResBody
+  }
+
+  /**
+   * Creates an access token from refresh token.
+   * 
+   * @public
+   * @param {string} refreshToken A token that can be repeatedly generate access tokens.
+   * @returns {AccessToken} The access token.
+   */
+  async createAccessTokenByRefreshToken (refreshToken) {
+    const { AuthService } = this
+
+    const createAccessTokenResponse = await AuthService.CreateAccessToken({
+      'body': {
+        'grant_type': 'REFRESH_TOKEN',
+        'token': refreshToken
+      }
+    })
+    const createAccessTokenResBody = createAccessTokenResponse.body
+
+    await this.setAccessToken(createAccessTokenResBody['access_token'])
+    return createAccessTokenResBody
+  }
+
+  /**
+   * Get the current user.
+   *
+   * @public
+   * @returns {object} The current user.
+   */
+  async getCurrentUser () {
+    const { AuthService } = this
+
+    const getCurrentUserResponse = await AuthService.GetCurrentUser()
+    const getCurrentUserResBody = getCurrentUserResponse.body
+
+    return getCurrentUserResBody
+  }
+
+  /**
+   * Updates the current user.
+   *
+   * @public
+   * @param {object} user The purposed update for the current user.
+   * @returns {object} The updated current user.
+   */
+  async updateCurrentUser (user) {
+    const { authcoreAPI } = this
+
+    const currentUser = await authcoreAPI.AuthService.UpdateCurrentUser({
+      'body': {
+        'user': user
+      }
+    })
+
+    return currentUser
+  }
+
+  /**
+   * Creates an user.
+   *
+   * @public
+   * @param {object} user The user object.
+   * @param {string} user.username The purposed username of the user.
+   * @param {string} user.phone The purposed phone number of the user.
+   * @param {string} user.email The purposed email address of the user.
+   * @param {string} user.password The purposed password of the user.
+   * @param {string} user.displayName The purposed display name of the user.
+   */
+  async createUser (user) {
+    const { username = '', phone = '', email = '', password } = user
+    let { displayName } = user
+    if (displayName === undefined) {
+      if (username !== '') {
+        displayName = username
+      } else if (email !== '') {
+        displayName = email
+      } else if (phone !== '') {
+        displayName = phone
+      } else {
+        throw new Error('displayName cannot be undefined')
+      }
+    }
+    if (password === undefined) {
+      throw new Error('no password')
+    }
+    let { AuthService } = this
+
+    // Step 1: Create a user
+    const createUserResponse = await AuthService.CreateUser({
+      'body': {
+        'username': username,
+        'email': email,
+        'phone': phone,
+        'display_name': displayName
+      }
+    })
+    const createUserResBody = createUserResponse.body
+    await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
+    // We need to replace the old AuthService to use the new instance with access token.
+    AuthService = this.AuthService
+
+    // Step 2: Change the password of the created user
+    const hashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(password)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
+    await AuthService.ChangePassword({
+      'body': {
+        'password_verifier': {
+          'salt': formatBuffer.toBase64(salt),
+          'verifier': formatBuffer.toBase64(verifier)
+        }
+      }
+    })
+  }
+
+  /**
+   * Changes the password of the current user.
+   *
+   * @public
+   * @param {string} oldPassword The old password of the user.
+   * @param {string} newPassword The purposed new password of the user.
+   */
+  async changePassword (oldPassword, newPassword) {
+    const { AuthService } = this
+
+    const { username } = await this.getCurrentUser()
+    const createPasswordChallengeResponse = await AuthService.CreatePasswordChallenge()
+    const passwordChallenge = createPasswordChallengeResponse.body
+    const oldPasswordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
+    const oldChallengeToken = passwordChallenge['token']
+    const oldB = formatBuffer.fromBase64(passwordChallenge['B'])
+
+    const oldHashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(oldPassword)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { A, M1 } = await srp.getAandM1(username, oldHashedPassword, oldPasswordSalt, oldB)
+
+    const newHashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
+    await AuthService.ChangePassword({
+      'body': {
+        'old_password_response': {
+          'challenge_token': oldChallengeToken,
+          'M1': formatBuffer.toBase64(M1),
+          'A': formatBuffer.toBase64(A),
+        },
+        'password_verifier': {
+          'salt': formatBuffer.toBase64(salt),
+          'verifier': formatBuffer.toBase64(verifier)
+        }
+      }
+    })
+  }
+
+  /**
+   * Lists the owned second factors.
+   *
+   * @public
+   * @returns {object[]} The list of second factors.
+   */
+  async listSecondFactors () {
+    const { AuthService } = this
+
+    const listSecondFactorsResponse = await AuthService.ListSecondFactors()
+    const listSecondFactorsResBody = listSecondFactorsResponse.body
+    return listSecondFactorsResBody['second_factors']
+  }
+
+  /**
+   * Generates a secret for time-based one-time password (TOTP).
+   *
+   * @returns {string} A secret for time-based one-time password.
+   */
+  generateTOTPSecret () {
+    return formatBuffer.toString(randomTOTPSecret())
+  }
+
+  /**
+   * Creates a time-based one-time password (TOTP) as a second factor for the current user.
+   *
+   * @public
+   * @param {string} identifier The identifier of the TOTP authenticator.
+   * @param {string} totpSecret The secret for the TOTP authenticator.
+   * @param {string} totpPin The PIN received in the authenticator device of the user.
+   * @returns {object} The second factor object.
+   */
+  async createTOTPAuthenticator (identifier, totpSecret, totpPin) {
+    const { AuthService } = this
+
+    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
+      'body': {
+        'totp_info': {
+          'identifier': identifier,
+          'secret': totpSecret,
+        },
+        'answer': totpPin
+      }
+    })
+    const createSecondFactorResBody = createSecondFactorResponse.body
+    return createSecondFactorResBody
+  }
+
+  /**
+   * Creates a SMS authentication as a second factor for the current user.
+   *
+   * @public
+   * @param {string} phoneNumber The phone number for the SMS authentication.
+   * @returns {object} The second factor object.
+   */
+  async createSMSSecondFactor (phoneNumber) {
+    const { AuthService } = this
+
+    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
+      'body': {
+        'sms_info': {
+          'phone_number': phoneNumber
+        }
+      }
+    })
+    const createSecondFactorResBody = createSecondFactorResponse.body
+    return createSecondFactorResBody
+  }
+
+  /**
+   * Creates a backup code as a second factor for the current user.
+   *
+   * @public
+   * @returns {object} The second factor object.
+   */
+  async createBackupCode () {
+    const { AuthService } = this
+
+    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
+      'body': {
+        'backup_code_info': {},
+        'answer': ''
+      }
+    })
+    const createSecondFactorResBody = createSecondFactorResponse.body
+    return createSecondFactorResBody
+  }
+
+  /**
+   * Deletes an owned second factor.
+   *
+   * @public
+   * @param {number} id The ID of the second factor to-be deleted.
+   */
+  async deleteSecondFactor (id) {
+    const { AuthService } = this
+    await AuthService.DeleteSecondFactor({
+      'id': id
+    })
+  }
+
+  /**
+   * Creates an email contact.
+   *
+   * @public
+   * @param {string} email The e-mail address to be created as a contact.
+   */
+  async createEmailContact (email) {
+    const { AuthService } = this
+    const createContactResponse = await AuthService.CreateContact({
+      'body': {
+        'contact': {
+          'type': 'EMAIL',
+          'value': email
+        }
+      }
+    })
+    const createContactResBody = createContactResponse.body
+    await AuthService.StartVerifyContact({
+      'body': {
+        'contact_id': createContactResBody['id']
+      }
+    })
+  }
+
+  /**
+   * Creates a phone contact.
+   *
+   * @public
+   * @param {string} phone The phone number to be created as a contact.
+   */
+  async createPhoneContact (phone) {
+    const { AuthService } = this
+    const createContactResponse = await AuthService.CreateContact({
+      'body': {
+        'contact': {
+          'type': 'PHONE',
+          'value': phone
+        }
+      }
+    })
+    const createContactResBody = createContactResponse.body
+    await AuthService.StartVerifyContact({
+      'body': {
+        'contact_id': createContactResBody['id']
+      }
+    })
+  }
+
+  /**
+   * Lists the owned contacts.
+   *
+   * @public
+   * @param {string} [type] The type of contacts, either `phone` or `email`.
+   * @returns {object[]} The list of contacts.
+   */
+  async listContacts (type) {
+    const { AuthService } = this
+    const listContactsResponse = await AuthService.ListContacts({
+      type: type
+    })
+    const listContactsResBody = listContactsResponse.body
+    return listContactsResBody
+  }
+
+  /**
+   * Deletes a owned contact.
+   *
+   * @public
+   * @param {number} contactId The ID of the contact to-be deleted.
+   */
+  async deleteContact (contactId) {
+    const { AuthService } = this
+    await AuthService.DeleteContact({
+      'contact_id': contactId
+    })
+  }
+
+  /**
+   * Starts to verify an owned contact by requesting a verification email / SMS.
+   *
+   * @public
+   * @param {string} contactId The ID of the contact to-be verified.
+   */
+  async startVerifyContact (contactId) {
+    const { AuthService } = this
+    await AuthService.StartVerifyContact({
+      'body': {
+        'contact_id': contactId.toString()
+      }
+    })
+  }
+
+  /**
+   * Changes the primary contact.
+   *
+   * @public
+   * @param {string} contactId The ID of the new primary contact.
+   * @returns {object} The primary contact object.
+   */
+  async updatePrimaryContact (contactId) {
+    const { AuthService } = this
+
+    const updatePrimaryContactResponse = await AuthService.UpdatePrimaryContact({
+      'contact_id': (contactId).toString()
+    })
+    const updatePrimaryContactResBody = updatePrimaryContactResponse.body
+    return updatePrimaryContactResBody
+  }
+
+  /**
+   * Verifies a contact by verification token (the user need not to be authenticated to use this).
+   *
+   * @public
+   * @param {string} token The verification token.
+   */
+  async verifyContactByToken (token) {
+    const { AuthService } = this
+    await AuthService.CompleteVerifyContact({
+      'body': {
+        'token': token
+      }
+    })
+  }
+
+  /**
+   * Verifies a contact by verification code.
+   *
+   * @public
+   * @param {number} contactId The ID of the contact to-be verified.
+   * @param {string} code The verification code.
+   */
+  async verifyContactByCode (contactId, code) {
+    const { AuthService } = this
+    await AuthService.CompleteVerifyContact({
+      'body': {
+        'code': {
+          'contact_id': (contactId).toString(),
+          'code': code
+        }
+      }
+    })
+  }
+
+  /**
+   * Lists the owned sessions.
+   *
+   * @public
+   * @param {number} pageSize The number of sessions per page.
+   * @param {string} pageToken The page token.
+   * @param {boolean} ascending Boolean flag indicating the order of the sessions.
+   * @returns {object} The list of sessions.
+   */
+  async listSessions (pageSize, pageToken, ascending) {
+    const { AuthService } = this
+    const listSessionsResponse = await AuthService.ListSessions({
+      'page_size': pageSize,
+      'page_token': pageToken,
+      'ascending': ascending
+    })
+    const listSessionsResBody = listSessionsResponse.body
+    return listSessionsResBody
+  }
+
+  /**
+   * Deletes an owned session.
+   *
+   * @public
+   * @param {number} sessionId The ID of the session to-be deleted.
+   */
+  async deleteSession (sessionId) {
+    const { AuthService } = this
+    await AuthService.DeleteSession({
+      'session_id': sessionId
+    })
+  }
+
+  /**
+   * Gets the metadata for the current user.
+   *
+   * @public
+   * @returns {Metadata} The metadata object.
+   */
+  async getMetadata () {
+    const { AuthService } = this
+
+    const getMetadataResponse = await AuthService.GetMetadata()
+    const getMetadataResBody = getMetadataResponse.body
+    return {
+      userMetadata: getMetadataResBody['user_metadata']
+    }
+  }
+
+  /**
+   * Updates the metadata for the current user.
+   *
+   * @public
+   * @param {string} userMetadata The user metadata to-be.
+   * @returns {Metadata} The metadata object.
+   */
+  async updateMetadata (userMetadata) {
+    const { AuthService } = this
+    const updateMetadataResponse = await AuthService.UpdateMetadata({
+      'body': {
+        'user_metadata': userMetadata
+      }
+    })
+    const updateMetadataResBody = updateMetadataResponse.body
+    return {
+      userMetadata: updateMetadataResBody['user_metadata']
+    }
+  }
+
+  /**
+   * Validates the OAuth parameters on the client for the authorization request stated in
+   * [Section 4.1.1 of RFC6749](https://tools.ietf.org/html/rfc6749#section-4). Throws error if the
+   * parameters are not valid. As of now, only authorization code grant is implemented.
+   *
+   * @public
+   * @param {string} responseType Should either be "code" ~~or "token" (implicit grant is not
+   *        implemented)~~.
+   * @param {string} clientId The client identifier issued to the client by the Authcore OAuth
+   *        endpoint.
+   * @param {string} redirectUri The URI to be redirected after authenticated.
+   * @param {string} scope The scope of the access request.
+   * @param {string} state An opaque value used by the client to maintain the state between the
+   *        request and callback.
+   */
+  async validateOAuthParameters (responseType, clientId, redirectUri, scope, state) {
+    const { AuthService } = this
+    await AuthService.ValidateOAuthParameters({
+      'response_type': responseType,
+      'client_id': clientId,
+      'redirect_uri': redirectUri,
+      'scope': scope,
+      'state': state
+    })
+  }
+
+  /**
+   * Creates a new reset password flow by sending an email to the email address or a SMS to the
+   * phone number, depending the type of handle user has input.
+   *
+   * @public
+   * @param {string} handle A handle of the user. Should either be a email address or a phone
+   *        number.
+   * @returns {object} The authentication state for reset password.
+   */
+  async startResetPasswordAuthentication (handle) {
+    const { AuthService } = this
+
+    const startResetPasswordAuthenticationResponse = await AuthService.StartResetPasswordAuthentication({
+      'body': {
+        'user_handle': handle
+      }
+    })
+    const startResetPasswordAuthenticationResBody = startResetPasswordAuthenticationResponse.body
+
+    this.handle = handle
+    this.temporaryToken = startResetPasswordAuthenticationResBody['temporary_token']
+    this._updateChallenges(startResetPasswordAuthenticationResBody)
+
+    return startResetPasswordAuthenticationResBody
+  }
+
+  /**
+   * Authenticates a user by contact token for resetting password.
+   * 
+   * @public
+   * @param {string} token The contact token for reset password.
+   * @returns {object} The authentication state for reset password.
+   */
+  async authenticateResetPasswordWithContact (token) {
+    const { AuthService, temporaryToken } = this
+
+    const authenticateResetPasswordResponse = await AuthService.AuthenticateResetPassword({
+      'body': {
+        'temporary_token': temporaryToken,
+        'contact_token': {
+          'token': token
+        }
+      }
+    })
+    const authenticateResetPasswordResBody = authenticateResetPasswordResponse.body
+
+    this._updateChallenges(authenticateResetPasswordResBody)
+    return authenticateResetPasswordResBody
+  }
+
+  /**
+   * Resets a user password given the reset password token and the new password.
+   * 
+   * @public
+   * @param {string} resetPasswordToken An one-use token that is used to reset password.
+   * @param {string} newPassword The new password of the user.
+   */
+  async resetPassword (resetPasswordToken, newPassword) {
+    const { AuthService } = this
+
+    // In the current implementation, the username would not affect the password.
+    const username = ''
+
+    const newHashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
+    await AuthService.ResetPassword({
+      'body': {
+        'token': resetPasswordToken,
+        'password_verifier': {
+          'salt': formatBuffer.toBase64(salt),
+          'verifier': formatBuffer.toBase64(verifier)
+        }
+      }
+    })
+  }
+
+  /**
+   * Initiates the OAuth authentication flow.
+   *
+   * @public
+   * @param {string} service The external OAuth service used.
+   * @returns {string} The URI of the OAuth endpoint.
+   */
+  async startAuthenticateOAuth (service) {
+    const { AuthService } = this
+
+    const startAuthenticateOAuthResponse = await AuthService.StartAuthenticateOAuth({
+      'service': service.toUpperCase()
+    })
+    const startAuthenticateOAuthResBody = startAuthenticateOAuthResponse.body
+
+    return startAuthenticateOAuthResBody['oauth_endpoint_uri']
+  }
+
+  /**
+   * Validates the OAuth parameters on the client for the authorization request stated in
+   * [Section 4.1.2 of RFC6749](https://tools.ietf.org/html/rfc6749#section-4). Throws error if the.
+   * 
+   * @public
+   * @param {string} service The external OAuth service used.
+   * @param {string} state An opaque value used by the client to maintain the state between the
+   *        request and callback.
+   * @param {string} code The authorization code returned by the external OAuth service.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async authenticateOAuth (service, state, code) {
+    const { AuthService } = this
+
+    const authenticateOAuthResponse = await AuthService.Authenticate({
+      'body': {
+        'temporary_token': state, // = temporaryToken
+        'oauth_response': {
+          'service': service.toUpperCase(),
+          'code': code
+        }
+      }
+    })
+    const authenticateOAuthResBody = authenticateOAuthResponse.body
+    return authenticateOAuthResBody
+  }
+
+  /**
+   * Lists the owned OAuth factors.
+   *
+   * @public
+   * @returns {object[]} The list of OAuth factors.
+   */
+  async listOAuthFactors () {
+    const { AuthService } = this
+
+    const listOAuthFactorsResponse = await AuthService.ListOAuthFactors()
+    const listOAuthFactorsResBody = listOAuthFactorsResponse.body
+    return listOAuthFactorsResBody['oauth_factors']
+  }
+
+  /**
+   * Initiates the create OAuth factor flow.
+   *
+   * @public
+   * @param {string} service The external OAuth service used.
+   * @returns {string} The URI of the OAuth endpoint.
+   */
+  async startCreateOAuthFactor (service) {
+    const { AuthService } = this
+
+    const startCreateOAuthFactorResponse = await AuthService.StartCreateOAuthFactor({
+      'service': service.toUpperCase()
+    })
+    const startCreateOAuthFactorResBody = startCreateOAuthFactorResponse.body
+
+    return startCreateOAuthFactorResBody['oauth_endpoint_uri']
+  }
+
+  /**
+   * Creates a OAuth factor by the response of the OAuth response.
+   * 
+   * @public
+   * @param {string} service The external OAuth service used.
+   * @param {string} state An opaque value used by the client to maintain the state between the
+   *        request and callback.
+   * @param {string} code The authorization code returned by the external OAuth service.
+   * @returns {AuthenticationState} The authentication state.
+   */
+  async createOAuthFactor (service, state, code) {
+    const { AuthService } = this
+
+    const createOAuthFactorResponse = await AuthService.CreateOAuthFactor({
+      'body': {
+        'service': service.toUpperCase(),
+        'state': state,
+        'code': code
+      }
+    })
+    const createOAuthFactorResBody = createOAuthFactorResponse.body
+    return createOAuthFactorResBody
+  }
+
+  /**
+   * Deletes an owned OAuth factor.
+   *
+   * @public
+   * @param {number} id The ID of the OAuth factor to-be deleted.
+   */
+  async deleteOAuthFactor (id) {
+    const { AuthService } = this
+    await AuthService.DeleteOAuthFactor({
+      'id': id
+    })
+  }
+
+  /**
+   * Constructs auth client including interceptor for unauthorized and unauthenticated cases to run
+   * callbacks from client implementation.
+   *
+   * @private
+   */
+  async _getSwaggerClient () {
     let authorizations
     if (this.config.accessToken) {
       authorizations = {
@@ -86,783 +985,23 @@ class AuthCoreAuthClient {
   }
 
   /**
-   * Sets the access token and renew the Swagger client
-   * @param {string} accessToken
+   * Updates the challenge to the class instance, given the `AuthenticationState` entity defined by
+   * the protocol buffers.
+   * 
+   * @private
+   * @param {object} res A response body from the authentication flow. Equivalently the
+   *        `AuthenticationState` entity defined by the protocol buffers.
    */
-  async setAccessToken (accessToken) {
-    this.config.accessToken = accessToken
-    await this.getSwaggerAuthClientAsync()
-  }
-
-  /**
-   * Gets the access token
-   * @returns {string} The access token
-   */
-  getAccessToken () {
-    return this.config.accessToken
-  }
-
-  // Authentication APIs
-
-  /**
-   * Starts the authentication flow by getting the password challenge
-   * @param {string} handle
-   * @returns {object} The response body for 'StartAuthentication' API call
-   */
-  async startAuthentication (handle) {
-    const { AuthService } = this
-
-    const startAuthenticationResponse = await AuthService.StartAuthentication({
-      'body': {
-        'user_handle': handle
-      }
-    })
-    const startAuthenticationResBody = startAuthenticationResponse.body
-
-    this.handle = handle
-    this.temporaryToken = startAuthenticationResBody['temporary_token']
-    this._updateChallenges(startAuthenticationResBody)
-
-    return startAuthenticationResBody
-  }
-
-  /**
-   * Starts SMS authentication by sending a SMS
-   * @returns {object} The response body for 'StartAuthenticateSecondFactor' API call
-   */
-  async startAuthenticateSMS () {
-    const { AuthService, temporaryToken } = this
-
-    const startAuthenticateSecondFactorResponse = await AuthService.StartAuthenticateSecondFactor({
-      'body': {
-        'temporary_token': temporaryToken,
-        'challenge': 'SMS_CODE'
-      }
-    })
-    const startAuthenticateSecondFactorResBody = startAuthenticateSecondFactorResponse.body
-    return startAuthenticateSecondFactorResBody
-  }
-
-  /**
-   * Continue the authentication flow with SRP as a factor
-   * @param {string} password
-   * @returns {object} The response body for 'Authenticate' API call
-   */
-  async authenticateWithSRP (password) {
-    const { AuthService, handle, passwordChallenge, temporaryToken } = this
-
-    const passwordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
-    const challengeToken = passwordChallenge['token']
-    const B = formatBuffer.fromBase64(passwordChallenge['B'])
-
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { A, M1 } = await srp.getAandM1(handle, hashedPassword, passwordSalt, B)
-    const authenticateResponse = await AuthService.Authenticate({
-      'body': {
-        'temporary_token': temporaryToken,
-        'password_response': {
-          'challenge_token': challengeToken,
-          'M1': formatBuffer.toBase64(M1),
-          'A': formatBuffer.toBase64(A)
-        }
-      }
-    })
-    const authenticateResBody = authenticateResponse.body
-
-    this._updateChallenges(authenticateResBody)
-    return authenticateResBody
-  }
-
-  /**
-   * Continue the authentication flow with TOTP as a factor
-   * @param {string} pin
-   * @returns {object} The response body for 'AuthenticateSecondFactor' API call
-   */
-  async authenticateWithTOTP (pin) {
-    const { AuthService, temporaryToken } = this
-
-    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
-      'body': {
-        'temporary_token': temporaryToken,
-        'challenge': 'TIME_BASED_ONE_TIME_PASSWORD',
-        'answer': pin
-      }
-    })
-    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
-
-    this._updateChallenges(authenticateSecondFactorResBody)
-    return authenticateSecondFactorResBody
-  }
-
-  /**
-   * Continue the authentication flow with SMS as a factor
-   * @param {string} code
-   * @returns {object} The response body for 'AuthenticateSecondFactor' API call
-   */
-  async authenticateWithSMS (code) {
-    const { AuthService, temporaryToken } = this
-
-    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
-      'body': {
-        'temporary_token': temporaryToken,
-        'challenge': 'SMS_CODE',
-        'answer': code
-      }
-    })
-    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
-
-    this._updateChallenges(authenticateSecondFactorResBody)
-    return authenticateSecondFactorResBody
-  }
-
-  /**
-   * Continue the authentication flow with backup code as a factor
-   * @param {string} code
-   * @returns {object} The response body for 'AuthenticateSecondFactor' API call
-   */
-  async authenticateWithBackupCode (code) {
-    const { AuthService, temporaryToken } = this
-
-    const authenticateSecondFactorResponse = await AuthService.AuthenticateSecondFactor({
-      'body': {
-        'temporary_token': temporaryToken,
-        'challenge': 'BACKUP_CODE',
-        'answer': code
-      }
-    })
-    const authenticateSecondFactorResBody = authenticateSecondFactorResponse.body
-
-    this._updateChallenges(authenticateSecondFactorResBody)
-    return authenticateSecondFactorResBody
-  }  
-
-  /**
-   * Creates an access token from authorization token
-   * @param {string} authorizationToken
-   * @returns {object} The response body for 'CreateAccessToken' API call
-   */
-  async createAccessToken (authorizationToken) {
-    const { AuthService } = this
-
-    const createAccessTokenResponse = await AuthService.CreateAccessToken({
-      'body': {
-        'grant_type': 'AUTHORIZATION_TOKEN',
-        'token': authorizationToken
-      }
-    })
-    const createAccessTokenResBody = createAccessTokenResponse.body
-
-    await this.setAccessToken(createAccessTokenResBody['access_token'])
-    return createAccessTokenResBody
-  }
-
-  /**
-   * Creates an access token from refresh token
-   * @param {string} refreshToken
-   * @returns {object} The response body for 'CreateAccessToken' API call
-   */
-  async createAccessTokenByRefreshToken (refreshToken) {
-    const { AuthService } = this
-
-    const createAccessTokenResponse = await AuthService.CreateAccessToken({
-      'body': {
-        'grant_type': 'REFRESH_TOKEN',
-        'token': refreshToken
-      }
-    })
-    const createAccessTokenResBody = createAccessTokenResponse.body
-
-    await this.setAccessToken(createAccessTokenResBody['access_token'])
-    return createAccessTokenResBody
-  }
-
-  /**
-   * Get the current user
-   * @returns {object} The current user
-   */
-  async getCurrentUser () {
-    const { AuthService } = this
-
-    const getCurrentUserResponse = await AuthService.GetCurrentUser()
-    const getCurrentUserResBody = getCurrentUserResponse.body
-
-    return getCurrentUserResBody
-  }
-
-  async updateCurrentUser (user) {
-    const { authcoreAPI } = this
-
-    const currentUser = await authcoreAPI.AuthService.UpdateCurrentUser({
-      'body': {
-        'user': user
-      }
-    })
-
-    return currentUser
-  }
-
-  /**
-   * Creates an user
-   * @param {object} data Object includes user information to be registered. It should include handle information(username/email/phone) and password, displayName can also be provided.
-   */
-  async createUser (data) {
-    const { username = '', phone = '', email = '', password } = data
-    let { displayName } = data
-    if (displayName === undefined) {
-      if (username !== '') {
-        displayName = username
-      } else if (email !== '') {
-        displayName = email
-      } else if (phone !== '') {
-        displayName = phone
-      } else {
-        throw new Error('displayName cannot be undefined')
-      }
-    }
-    if (password === undefined) {
-      throw new Error('no password')
-    }
-    let { AuthService } = this
-
-    // Step 1: Create a user
-    const createUserResponse = await AuthService.CreateUser({
-      'body': {
-        'username': username,
-        'email': email,
-        'phone': phone,
-        'display_name': displayName
-      }
-    })
-    const createUserResBody = createUserResponse.body
-    await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
-    // We need to replace the old AuthService to use the new instance with access token.
-    AuthService = this.AuthService
-
-    // Step 2: Change the password of the created user
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
-    const changePasswordResponse = await AuthService.ChangePassword({
-      'body': {
-        'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
-        }
-      }
-    })
-    const changePasswordResBody = changePasswordResponse.body
-    return changePasswordResBody
-  }
-
-  async changePassword (oldPassword, newPassword) {
-    const { AuthService } = this
-
-    const { username } = await this.getCurrentUser()
-    const createPasswordChallengeResponse = await AuthService.CreatePasswordChallenge()
-    const passwordChallenge = createPasswordChallengeResponse.body
-    const oldPasswordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
-    const oldChallengeToken = passwordChallenge['token']
-    const oldB = formatBuffer.fromBase64(passwordChallenge['B'])
-
-    const oldHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(oldPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { A, M1 } = await srp.getAandM1(username, oldHashedPassword, oldPasswordSalt, oldB)
-
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
-    const changePasswordResponse = await AuthService.ChangePassword({
-      'body': {
-        'old_password_response': {
-          'challenge_token': oldChallengeToken,
-          'M1': formatBuffer.toBase64(M1),
-          'A': formatBuffer.toBase64(A),
-        },
-        'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
-        }
-      }
-    })
-    const changePasswordResBody = changePasswordResponse.body
-
-    return changePasswordResBody
-  }
-
-  /**
-   * Gets the list of second factors for the current user
-   * @returns {object[]} The list of second factors
-   */
-  async listSecondFactors () {
-    const { AuthService } = this
-
-    const listSecondFactorsResponse = await AuthService.ListSecondFactors()
-    const listSecondFactorsResBody = listSecondFactorsResponse.body
-    return listSecondFactorsResBody['second_factors']
-  }
-
-  /**
-   * Generates a TOTP secret
-   * @returns {string} a TOTP secret
-   */
-  generateTOTPSecret () {
-    return formatBuffer.toString(randomTOTPSecret())
-  }
-
-  /**
-   * Creates a TOTP authenticator for the current user
-   * @param {*} identifier
-   * @param {*} totpSecret
-   * @param {*} totpPin
-   */
-  async createTOTPAuthenticator (identifier, totpSecret, totpPin) {
-    const { AuthService } = this
-
-    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
-      'body': {
-        'totp_info': {
-          'identifier': identifier,
-          'secret': totpSecret,
-        },
-        'answer': totpPin
-      }
-    })
-    const createSecondFactorResBody = createSecondFactorResponse.body
-    return createSecondFactorResBody
-  }
-
-  /**
-   * Creates a SMS second factor for the current user
-   * @param {*} phoneNumber
-   */
-  async createSMSSecondFactor (phoneNumber) {
-    const { AuthService } = this
-
-    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
-      'body': {
-        'sms_info': {
-          'phone_number': phoneNumber
-        }
-      }
-    })
-    const createSecondFactorResBody = createSecondFactorResponse.body
-    return createSecondFactorResBody
-  }
-
-  /**
-   * Creates a backup code second factor for the current user
-   */
-  async createBackupCode () {
-    const { AuthService } = this
-
-    const createSecondFactorResponse = await AuthService.CreateSecondFactor({
-      'body': {
-        'backup_code_info': {},
-        'answer': ''
-      }
-    })
-    const createSecondFactorResBody = createSecondFactorResponse.body
-    return createSecondFactorResBody
-  }
-
-  /**
-   * Deletes a second factor for the current user
-   * @param {number} id The second factor to be deleted
-   */
-  async deleteSecondFactor (id) {
-    const { AuthService } = this
-
-    const deleteSecondFactorResponse = await AuthService.DeleteSecondFactor({
-      'id': id
-    })
-    const deleteSecondFactorResBody = deleteSecondFactorResponse.body
-    return deleteSecondFactorResBody
-  }
-
-  /**
-   * Creates an email contact
-   * @param {string} email The e-mail address to be added
-   */
-  async createEmailContact (email) {
-    const { AuthService } = this
-
-    const createContactResponse = await AuthService.CreateContact({
-      'body': {
-        'contact': {
-          'type': 'EMAIL',
-          'value': email
-        }
-      }
-    })
-    const createContactResBody = createContactResponse.body
-
-    const startVerifyContactResponse = await AuthService.StartVerifyContact({
-      'body': {
-        'contact_id': createContactResBody['id']
-      }
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  /**
-   * Creates a phone contact
-   * @param {string} phone The phone number to be added
-   */
-  async createPhoneContact (phone) {
-    const { AuthService } = this
-
-    const createContactResponse = await AuthService.CreateContact({
-      'body': {
-        'contact': {
-          'type': 'PHONE',
-          'value': phone
-        }
-      }
-    })
-    const createContactResBody = createContactResponse.body
-
-    const startVerifyContactResponse = await AuthService.StartVerifyContact({
-      'body': {
-        'contact_id': createContactResBody['id']
-      }
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  /**
-   * Gets the list of contacts for the current user
-   */
-  async listContacts (type) {
-    const { AuthService } = this
-
-    const listContactsResponse = await AuthService.ListContacts({
-      type: type
-    })
-    const listContactsResBody = listContactsResponse.body
-    return listContactsResBody
-  }
-
-  /**
-   * Deletes a contact for the current user
-   * @param {number} contactId The contact to be deleted
-   */
-  async deleteContact (contactId) {
-    const { AuthService } = this
-
-    const deleteContactResponse = await AuthService.DeleteContact({
-      'contact_id': contactId
-    })
-    const deleteContactResBody = deleteContactResponse.body
-    return deleteContactResBody
-  }
-
-  async startVerifyContact (contactId) {
-    const { AuthService } = this
-
-    const startVerifyContactResponse = await AuthService.StartVerifyContact({
-      'body': {
-        'contact_id': (contactId).toString()
-      }
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  async updatePrimaryContact (contactId) {
-    const { AuthService } = this
-
-    const updatePrimaryContactResponse = await AuthService.UpdatePrimaryContact({
-      'contact_id': (contactId).toString()
-    })
-    const updatePrimaryContactResBody = updatePrimaryContactResponse.body
-    return updatePrimaryContactResBody
-  }
-
-  /**
-   * Verifies a contact by a verification token.
-   * The user need not to be authenticated to use this API.
-   * @param {string} token The verification token that could verify the contact
-   */
-  async verifyContactByToken (token) {
-    const { AuthService } = this
-
-    const completeVerifyContactResponse = await AuthService.CompleteVerifyContact({
-      'body': {
-        'token': token
-      }
-    })
-    const completeVerifyContactResBody = completeVerifyContactResponse.body
-    return completeVerifyContactResBody
-  }
-
-  /**
-   * Verifies a contact by a verification code.
-   * The user needs to be authenticated to use this API.
-   * @param {number} contactId The contact to be verified
-   * @param {string} code The verification code that could verify the contact
-   */
-  async verifyContactByCode (contactId, code) {
-    const { AuthService } = this
-
-    const completeVerifyContactResponse = await AuthService.CompleteVerifyContact({
-      'body': {
-        'code': {
-          'contact_id': (contactId).toString(),
-          'code': code
-        }
-      }
-    })
-    const completeVerifyContactResBody = completeVerifyContactResponse.body
-    return completeVerifyContactResBody
-  }
-
-  /**
-   * Gets the list of sessions for a given user
-   * @returns {object[]} The list of sessions
-   */
-  async listSessions (pageSize, pageToken, ascending) {
-    const { AuthService } = this
-
-    const listSessionsResponse = await AuthService.ListSessions({
-      'page_size': pageSize,
-      'page_token': pageToken,
-      'ascending': ascending
-    })
-    const listSessionsResBody = listSessionsResponse.body
-    return listSessionsResBody
-  }
-
-  /**
-   * Delete session for a given session
-   * @param {number} sessionId The session to be deleted
-   */
-  async deleteSession (sessionId) {
-    const { AuthService } = this
-
-    const deleteSessionResponse = await AuthService.DeleteSession({
-      'session_id': sessionId
-    })
-    const deleteSessionResBody = deleteSessionResponse.body
-    return deleteSessionResBody
-  }
-
-  /**
-   * Gets the metadata for the current user.
-   * @returns {string} The user metadata
-   */
-  async getMetadata () {
-    const { AuthService } = this
-
-    const getMetadataResponse = await AuthService.GetMetadata()
-    const getMetadataResBody = getMetadataResponse.body
-    return {
-      userMetadata: getMetadataResBody['user_metadata']
-    }
-  }
-
-  /**
-   * Updates the metadata for the current user.
-   * @param {string} metadata
-   * @returns {string} The updated metadata
-   */
-  async updateMetadata (userMetadata) {
-    const { AuthService } = this
-    const updateMetadataResponse = await AuthService.UpdateMetadata({
-      'body': {
-        'user_metadata': userMetadata
-      }
-    })
-    const updateMetadataResBody = updateMetadataResponse.body
-    return {
-      userMetadata: updateMetadataResBody['user_metadata']
-    }
-  }
-
-  /**
-   * Validates the OAuth parameters on the client.  Throws error if the parameters are not valid.
-   * @param {string} responseType
-   * @param {string} clientId
-   * @param {string} redirectUri
-   * @param {string} scope
-   * @param {string} state
-   */
-  async validateOAuthParameters (responseType, clientId, redirectUri, scope, state) {
-    const { AuthService } = this
-    await AuthService.ValidateOAuthParameters({
-      'response_type': responseType,
-      'client_id': clientId,
-      'redirect_uri': redirectUri,
-      'scope': scope,
-      'state': state
-    })
-  }
-
-  async startResetPasswordAuthentication (handle) {
-    const { AuthService } = this
-
-    const startResetPasswordAuthenticationResponse = await AuthService.StartResetPasswordAuthentication({
-      'body': {
-        'user_handle': handle
-      }
-    })
-    const startResetPasswordAuthenticationResBody = startResetPasswordAuthenticationResponse.body
-
-    this.handle = handle
-    this.temporaryToken = startResetPasswordAuthenticationResBody['temporary_token']
-    this._updateChallenges(startResetPasswordAuthenticationResBody)
-
-    return startResetPasswordAuthenticationResBody
-  }
-
-  async authenticateResetPasswordWithContact (token) {
-    const { AuthService, temporaryToken } = this
-
-    const authenticateResetPasswordResponse = await AuthService.AuthenticateResetPassword({
-      'body': {
-        'temporary_token': temporaryToken,
-        'contact_token': {
-          'token': token
-        }
-      }
-    })
-    const authenticateResetPasswordResBody = authenticateResetPasswordResponse.body
-
-    this._updateChallenges(authenticateResetPasswordResBody)
-    return authenticateResetPasswordResBody
-  }
-
-  async resetPassword (resetPasswordToken, newPassword) {
-    const { AuthService } = this
-
-    // In the current implementation, the username would not affect the password.
-    const username = ''
-
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
-    const resetPasswordResponse = await AuthService.ResetPassword({
-      'body': {
-        'token': resetPasswordToken,
-        'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
-        }
-      }
-    })
-    const resetPasswordResBody = resetPasswordResponse.body
-
-    return resetPasswordResBody
-  }
-
-  async startAuthenticateOAuth (service) {
-    const { AuthService } = this
-
-    const startAuthenticateOAuthResponse = await AuthService.StartAuthenticateOAuth({
-      'service': service.toUpperCase()
-    })
-    const startAuthenticateOAuthResBody = startAuthenticateOAuthResponse.body
-    
-    return startAuthenticateOAuthResBody['oauth_endpoint_uri']
-  }
-
-  async authenticateOAuth (service, state, code) {
-    const { AuthService } = this
-
-    const authenticateOAuthResponse = await AuthService.Authenticate({
-      'body': {
-        'temporary_token': state, // = temporaryToken
-        'oauth_response': {
-          'service': service.toUpperCase(),
-          'code': code
-        }
-      }
-    })
-    const authenticateOAuthResBody = authenticateOAuthResponse.body
-    return authenticateOAuthResBody
-  }
-
-  async listOAuthFactors () {
-    const { AuthService } = this
-
-    const listOAuthFactorsResponse = await AuthService.ListOAuthFactors()
-    const listOAuthFactorsResBody = listOAuthFactorsResponse.body
-    return listOAuthFactorsResBody['oauth_factors']
-  }
-
-  async startCreateOAuthFactor (service) {
-    const { AuthService } = this
-
-    const startCreateOAuthFactorResponse = await AuthService.StartCreateOAuthFactor({
-      'service': service.toUpperCase()
-    })
-    const startCreateOAuthFactorResBody = startCreateOAuthFactorResponse.body
-    
-    return startCreateOAuthFactorResBody['oauth_endpoint_uri']
-  }
-
-  async createOAuthFactor (service, state, code) {
-    const { AuthService } = this
-
-    const createOAuthFactorResponse = await AuthService.CreateOAuthFactor({
-      'body': {
-        'service': service.toUpperCase(),
-        'state': state,
-        'code': code
-      }
-    })
-    const createOAuthFactorResBody = createOAuthFactorResponse.body
-    return createOAuthFactorResBody
-  }
-
-  async deleteOAuthFactor (id) {
-    const { AuthService } = this
-
-    const deleteOAuthFactorResponse = await AuthService.DeleteOAuthFactor({
-      'id': id
-    })
-    const deleteOAuthFactorResBody = deleteOAuthFactorResponse.body
-    return deleteOAuthFactorResBody
-  }
-
-  // Private functions
-  /**
-   * Updates the challenge to the class instance, given the response body for StartAuthentication
-   * or Authenticate.
-   * @param {object} resBody
-   */
-  _updateChallenges (resBody) {
+  _updateChallenges (res) {
     // Reset challenges
     this.passwordChallenge = undefined
     // Load challenges
-    if (resBody['challenges'] === undefined) return
+    if (res['challenges'] === undefined) return
 
-    resBody['challenges'].forEach(challenge => {
+    res['challenges'].forEach(challenge => {
       switch (challenge) {
         case 'SECURE_REMOTE_PASSWORD':
-          this.passwordChallenge = resBody['password_challenge']
+          this.passwordChallenge = res['password_challenge']
         break
         case 'TIME_BASED_ONE_TIME_PASSWORD': break
         case 'SMS_CODE': break
@@ -874,5 +1013,36 @@ class AuthCoreAuthClient {
     })
   }
 }
+
+/**
+ * @typedef {object} AuthenticationState The `AuthenticationState` entity defined by the protocol
+ *          buffers.
+ * @property {string} temporary_token The temporary token during authentication.
+ * @property {boolean} authenticated Boolean flag indicating if the authentication flow is
+ *           completed.
+ * @property {string} authenticated_user_id The authenticated user ID if the authentication flow is
+ *           completed.
+ * @property {string[]} challenges The list of challenges that can be completed to continue the
+ *           authentication flow.
+ * @property {string} password_challenge The challenge for the secure remote password (SRP)
+ *           protocol authentication.
+ * @property {string} authorization_token The authorization token if the authentication flow is
+ *           completed.
+ */
+
+/**
+ * @typedef {object} AccessToken The `AccessToken` entity defined by the protocol buffers.
+ * @property {string} access_token The access token.
+ * @property {string} refresh_token The refresh token.
+ * @property {string} id_token The ID token.
+ * @property {string} token_type The token type.
+ * @property {string} expires_in The lifetime (in seconds) of the access token.
+ */
+
+
+/**
+ * @typedef {object} Metadata
+ * @property {string} userMetadata The user metadata.
+ */
 
 exports.AuthCoreAuthClient = AuthCoreAuthClient

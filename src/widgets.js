@@ -1,6 +1,12 @@
 const crypto = require('crypto')
 const formatBuffer = require('./utils/formatBuffer')
 
+/**
+ * Clears the children of a DOM element.
+ * 
+ * @private
+ * @param {*} id The ID of the DOM element.
+ */
 function clearChildren (id) {
   const elm = document.getElementById(id)
   while (elm.firstChild) {
@@ -8,6 +14,19 @@ function clearChildren (id) {
   }
 }
 
+/**
+ * An class for Authcore widgets. Every Authcore widget would be an extension of this class.
+ *
+ * @param {object} options
+ * @param {string} options.container The ID of the DOM element that injects the widget.
+ * @param {string} options.company The company name used for the widget.
+ * @param {string} options.logo The URL for the logo used for the widget.
+ * @param {object} options.callbacks The set of callback functions to-be called.
+ * @param {string} options.root The hostname for Authcore widgets.
+ * @param {boolean} [options.display=true] Boolean flag indicating if the widget is visible.
+ * @param {boolean} [options.internal=false] Boolean flag indicating if the widget is internally
+ *        used. If set to internal, the logo and the footer will not appear.
+ */
 class AuthCoreWidget {
   constructor (options) {
     if (!options.root) {
@@ -82,6 +101,9 @@ class AuthCoreWidget {
     })
   }
 
+  /**
+   * Self-destructs the instance.
+   **/
   destroy () {
     const { container } = this
     clearChildren(container)
@@ -90,7 +112,9 @@ class AuthCoreWidget {
   }
 
   /**
-   * Update the access token to the widget component
+   * Passes the access token into the widget.
+   *
+   * @param {string} accessToken The access token.
    **/
   updateAccessToken (accessToken) {
     this.widget.contentWindow.postMessage({
@@ -100,115 +124,191 @@ class AuthCoreWidget {
   }
 
   /**
-   * Build widget src with extra parameters
+   * Build widget src with extra parameters.
+   *
+   * @private
+   * @param {object} options The options object.
+   * @param {string} name The name of the widget.
    **/
   buildWidgetSrc (options, name) {
-    let { internal = false } = options
+    let { logo, company, internal = false } = options
+    if (logo === undefined) {
+      logo = ''
+    } else {
+      logo = encodeURIComponent(logo)
+    }
+    if (company !== undefined) {
+      company = encodeURIComponent(company)
+    }
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
-    this.widget.src = `${options.root}/${name}?cid=${this.containerId}&internal=${internal}`
+    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}`
+  }
+}
+
+
+/**
+ * The register widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Register extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    // Assume required verification in registration
+    let { logo, company, verification = true, internal = false } = options
+    if (logo === undefined) {
+      logo = ''
+    } else {
+      logo = encodeURIComponent(logo)
+    }
+    if (company !== undefined) {
+      company = encodeURIComponent(company)
+    }
+    if (typeof internal !== 'boolean') {
+      throw new Error('internal must be boolean')
+    }
+    if (typeof verification !== 'boolean') {
+      throw new Error('verification must be boolean')
+    }
+    this.callbacks['_successRegister'] = (data) => {
+      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}&verification=${verification}`
+    }
+    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}`
+  }
+}
+
+/**
+ * The login widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Login extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'signin')
+  }
+}
+
+/**
+ * The verification widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Verification extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'verification')
+  }
+}
+
+/**
+ * The contacts widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Contacts extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'contacts')
+  }
+}
+
+/**
+ * The profile widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Profile extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'profile')
+  }
+}
+
+/**
+ * The security widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Security extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'security')
+  }
+}
+
+/**
+ * The sessions widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class Sessions extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'sessions')
+  }
+}
+
+/**
+ * The ethereum sign approval widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class EthereumSignApproval extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'ethereum-sign-approval')
+    this.callbacks['_onEthereumSignApproved'] = () => {
+      options.approve()
+      this.destroy()
+    }
+    this.callbacks['_onEthereumSignRejected'] = () => {
+      options.reject()
+      this.destroy()
+    }
+  }
+}
+
+/**
+ * The refresh token widget that is used to refresh an access token.
+ * 
+ * @augments AuthCoreWidget
+ */
+class RefreshToken extends AuthCoreWidget {
+  constructor (options) {
+    options.display = false
+    super(options)
+    let containerClass = 'refresh-token'
+    this.widget.className = containerClass
+    this.widget.src = `${options.root}/refresh-token?cid=${this.containerId}`
+    this.callbacks['_unauthenticated_tokenUpdated'] = () => {
+      // Remove all refresh token widgets
+      const elms = document.getElementsByClassName(containerClass)
+      while (elms.length > 0) {
+        elms[0].remove()
+      }
+    }
+    this.callbacks['_unauthenticated_tokenUpdatedFail'] = () => {
+      const elms = document.getElementsByClassName(containerClass)
+      while (elms.length > 0) {
+        elms[0].remove()
+      }
+    }
   }
 }
 
 const AuthCoreWidgets = {
-  Register: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      // Assume required verification in registration
-      let { logo, verification = true, internal = false } = options
-      if (logo === undefined) {
-        logo = ''
-      } else {
-        logo = encodeURIComponent(logo)
-      }
-      if (typeof internal !== 'boolean') {
-        throw new Error('internal must be boolean')
-      }
-      if (typeof verification !== 'boolean') {
-        throw new Error('verification must be boolean')
-      }
-      this.callbacks['_successRegister'] = (data) => {
-        if (verification) {
-          localStorage.setItem('temporaryToken', data.accessToken)
-        }
-        this.widget.src = `${options.root}/verification?logo=${logo}&cid=${this.containerId}&internal=${internal}`
-      }
-      this.widget.src = `${options.root}/register?logo=${logo}&cid=${this.containerId}&internal=${internal}`
-    }
-  },
-  Login: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'signin')
-    }
-  },
-  Verification: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'verification')
-    }
-  },
-  Contacts: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'contacts')
-    }
-  },
-  Profile: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'profile')
-    }
-  },
-  Security: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'security')
-    }
-  },
-  Sessions: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'sessions')
-    }
-  },
-  EthereumSignApproval: class extends AuthCoreWidget {
-    constructor (options) {
-      super(options)
-      this.buildWidgetSrc(options, 'ethereum-sign-approval')
-      this.callbacks['_onEthereumSignApproved'] = () => {
-        options.approve()
-        this.destroy()
-      }
-      this.callbacks['_onEthereumSignRejected'] = () => {
-        options.reject()
-        this.destroy()
-      }
-    }
-  },
-  RefreshToken: class extends AuthCoreWidget {
-    constructor (options) {
-      options.display = false
-      super(options)
-      let containerClass = 'refresh-token'
-      this.widget.className = containerClass
-      this.widget.src = `${options.root}/refresh-token?cid=${this.containerId}`
-      this.callbacks['_unauthenticated_tokenUpdated'] = () => {
-        // Remove all refresh token widgets
-        const elms = document.getElementsByClassName(containerClass)
-        while (elms.length > 0) {
-          elms[0].remove()
-        }
-      }
-      this.callbacks['_unauthenticated_tokenUpdatedFail'] = () => {
-        const elms = document.getElementsByClassName(containerClass)
-        while (elms.length > 0) {
-          elms[0].remove()
-        }
-      }
-    }
-  }
+  Register,
+  Login,
+  Verification,
+  Contacts,
+  Profile,
+  Security,
+  Sessions,
+  EthereumSignApproval,
+  RefreshToken
 }
 
 exports.AuthCoreWidgets = AuthCoreWidgets

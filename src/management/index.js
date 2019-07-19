@@ -7,14 +7,25 @@ const formatBuffer = require('../utils/formatBuffer.js')
 const unicodeNorm = require('../utils/unicodeNorm.js')
 
 /**
- * Class interacting between AuthCore Web (and corresponding web clients) and the management.
- * Wrap interactive steps into functions.
- *
- * `config` is an object that contains:
- * 1. `apiBaseURL`: the base URL for the API endpoint.
- * 2. `callbacks`: the callback functions, listed below:
- *  - `unauthenticated`: callback when an user calls an API while not authenticated.
- * 3. `accessToken`: the access token of the user for the authenticated APIs.
+ * The class interacting between web client and AuthCore ManagementAPI server.
+ * 
+ * @public
+ * @param {object} config
+ * @param {string} config.apiBaseURL The base URL for the Authcore instance.
+ * @param {object} config.callbacks The set of callback functions to-be called.
+ * @param {Function} config.callbacks.unauthenticated The callback function when a user is
+ *        unauthenticated.
+ * @param {string} config.accessToken The access token of the user.
+ * @example
+ * const mgmtClient = await new AuthCoreManagementClient({
+ *   apiBaseURL: 'https://auth.example.com',
+ *   callbacks: {
+ *     unauthenticated: function () {
+ *       alert('unauthenticated!')
+ *     }
+ *   },
+ *   accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJle...'
+ * })
  */
 class AuthCoreManagementClient {
   constructor (config) {
@@ -29,9 +40,564 @@ class AuthCoreManagementClient {
   }
 
   /**
-   * Constructs Swagger management client
+   * Sets the access token and refreshes the Swagger client.
+   * 
+   * @public
+   * @param {string} accessToken The access token of the user.
    */
-  async getSwaggerMgmtClientAsync () {
+  async setAccessToken (accessToken) {
+    this.config.accessToken = accessToken
+    await this._getSwaggerClient()
+  }
+
+  /**
+   * Gets the access token.
+   * 
+   * @public
+   * @returns {string} The access token of the user.
+   */
+  getAccessToken () {
+    return this.config.accessToken
+  }
+
+  // Management APIs
+
+  /**
+   * Lists the users.
+   *
+   * @param {number} pageSize The number of users per page.
+   * @param {string} pageToken The page token.
+   * @param {boolean} ascending Boolean flag indicating the order of the users.
+   * @returns {object} The list of users.
+   */
+  async listUsers (pageSize, pageToken, ascending) {
+    const { ManagementService } = this
+
+    const listUsersResponse = await ManagementService.ListUsers({
+      'page_size': pageSize,
+      'page_token': pageToken,
+      'ascending': ascending
+    })
+    const listUsersResBody = listUsersResponse.body
+    return listUsersResBody
+  }
+
+  /**
+   * Gets a user.
+   *
+   * @param {string} userId The ID of the user.
+   * @returns {object} The user with given ID.
+   */
+  async getUser (userId) {
+    const { ManagementService } = this
+
+    const getUserResponse = await ManagementService.GetUser({
+      'user_id': userId.toString()
+    })
+    const getUserResBody = getUserResponse.body
+    return getUserResBody
+  }
+
+  /**
+   * Updates a user.
+   *
+   * @param {string} userId The ID of the user.
+   * @param {object} userObject The purposed update for the user.
+   * @returns {object} The updated user.
+   */
+  async updateUserProfile (userId, userObject) {
+    const { ManagementService } = this
+
+    const updateUserResponse = await ManagementService.UpdateUser({
+      'user_id': userId,
+      'body': {
+        'user': userObject
+      }
+    })
+    const updateUserResBody = updateUserResponse.body
+    return updateUserResBody
+  }
+
+  /**
+   * Updates the lock status of a user.
+   *
+   * @param {string} userId The ID of the user.
+   * @param {boolean} locked Boolean flag indicating if the user will be locked.
+   * @param {number} lockInDays The number of days locked.
+   * @param {string} description A description for the lock (or unlock).
+   * @returns {object} The updated user.
+   */
+  async updateUserLock (userId, locked, lockInDays, description) {
+    const { ManagementService } = this
+
+    let lockExpiredAt
+    if (locked) {
+      if (lockInDays === Infinity) {
+        lockExpiredAt = '2038-01-19T00:00:00Z'
+      } else if (parseFloat(lockInDays) > 0) {
+        lockExpiredAt = new Date(new Date().getTime() + 86400000 * parseFloat(lockInDays)).toISOString()
+      } else {
+        throw new Error('lock in days should be positive')
+      }
+    }
+
+    const updateUserResponse = await ManagementService.UpdateUser({
+      'user_id': userId,
+      'body': {
+        'user': {
+          'locked': locked,
+          'lock_expired_at': lockExpiredAt,
+          'lock_description': description
+        },
+        'type': 'LOCK'
+      }
+    })
+    const updateUserResBody = updateUserResponse.body
+    return updateUserResBody
+  }
+
+  /**
+   * Creates an email contact of a user.
+   *
+   * @param {string} userId The ID of the user.
+   * @param {string} email The e-mail address to be created as a contact.
+   */
+  async createEmailContact (userId, email) {
+    const { ManagementService } = this
+
+    const createContactResponse = await ManagementService.CreateContact({
+      'user_id': userId,
+      'body': {
+        'contact': {
+          'type': 'EMAIL',
+          'value': email
+        }
+      }
+    })
+    const createContactResBody = createContactResponse.body
+    await ManagementService.StartVerifyContact({
+      body: {
+        'contact_id': createContactResBody['id']
+      }
+    })
+  }
+
+  /**
+   * Creates a phone contact of a user.
+   *
+   * @param {string} userId The ID of the user.
+   * @param {string} phone The phone number to be created as a contact.
+   */
+  async createPhoneContact (userId, phone) {
+    const { ManagementService } = this
+
+    const createContactResponse = await ManagementService.CreateContact({
+      'user_id': userId,
+      'body': {
+        'contact': {
+          'type': 'PHONE',
+          'value': phone
+        }
+      }
+    })
+    const createContactResBody = createContactResponse.body
+    await ManagementService.StartVerifyContact({
+      body: {
+        'contact_id': createContactResBody['id']
+      }
+    })
+  }
+
+  /**
+   * Lists the contacts for a user.
+   *
+   * @param {string} userId The user ID.
+   * @param {string} type The type of contacts, either `phone` or `email`. (Optional).
+   * @returns {object[]} The list of contacts.
+   */
+  async listContacts (userId, type) {
+    const { ManagementService } = this
+
+    const listContactsResponse = await ManagementService.ListContacts({
+      'user_id': userId,
+      type: type
+    })
+    const listContactsResBody = listContactsResponse.body
+    return listContactsResBody
+  }
+
+  /**
+   * Changes the primary contact of a user.
+   *
+   * @param {string} contactId The ID of the new primary contact.
+   * @returns {object} The primary contact object.
+   */
+  async updatePrimaryContact (contactId) {
+    const { ManagementService } = this
+
+    const updatePrimaryContactResponse = await ManagementService.UpdatePrimaryContact({
+      'contact_id': contactId
+    })
+    const updatePrimaryContactResBody = updatePrimaryContactResponse.body
+    return updatePrimaryContactResBody
+  }
+
+  /**
+   * Deletes a contact.
+   *
+   * @param {number} contactId The ID of the contact to-be deleted..
+   */
+  async deleteContact (contactId) {
+    const { ManagementService } = this
+
+    await ManagementService.DeleteContact({
+      'contact_id': contactId
+    })
+  }
+
+  /**
+   * Starts to verify an owned contact by requesting a verification email / SMS.
+   *
+   * @param {string} contactId The ID of the contact to-be verified.
+   */
+  async startVerifyContact (contactId) {
+    const { ManagementService } = this
+    await ManagementService.StartVerifyContact({
+      'contact_id': (contactId).toString()
+    })
+  }
+
+  /**
+   * Lists the second factors for a user.
+   *
+   * @param {string} id The user ID.
+   * @returns {object[]} The list of second factors.
+   */
+  async listSecondFactors (id) {
+    const { ManagementService } = this
+
+    const listSecondFactorsResponse = await ManagementService.ListSecondFactors({
+      'user_id': id.toString()
+    })
+    const listSecondFactorsResBody = listSecondFactorsResponse.body
+    return listSecondFactorsResBody['second_factors']
+  }
+
+  /**
+   * Lists the audit logs.
+   *
+   * @param {number} pageSize The number of audit logs per page.
+   * @param {string} pageToken The page token.
+   * @param {boolean} ascending Boolean flag indicating the order of the audit logs.
+   * @returns {object} The list of audit logs.
+   */
+  async listAuditLogs (pageSize, pageToken, ascending) {
+    const { ManagementService } = this
+
+    const listAuditLogsResponse = await ManagementService.ListAuditLogs({
+      'page_size': pageSize,
+      'page_token': pageToken,
+      'ascending': ascending
+    })
+    const listAuditLogsResBody = listAuditLogsResponse.body
+    return listAuditLogsResBody
+  }
+
+  /**
+   * Lists the audit logs of a user.
+   *
+   * @param {string} userId The user ID.
+   * @param {number} pageSize The number of audit logs per page.
+   * @param {string} pageToken The page token.
+   * @param {boolean} ascending Boolean flag indicating the order of the audit logs.
+   * @returns {object} The list of audit logs.
+   */
+  async listUserAuditLogs (userId, pageSize, pageToken, ascending) {
+    const { ManagementService } = this
+
+    const listUserAuditLogsResponse = await ManagementService.ListAuditLogs({
+      'user_id': userId,
+      'page_size': pageSize,
+      'page_token': pageToken,
+      'ascending': ascending
+    })
+    const listUserAuditLogsResBody = listUserAuditLogsResponse.body
+    return listUserAuditLogsResBody
+  }
+
+  /**
+   * List the roles.
+   *
+   * @returns {object[]} The list of roles.
+   */
+  async listRoles () {
+    const { ManagementService } = this
+
+    const listRolesResponse = await ManagementService.ListRoles()
+    const listRolesResBody = listRolesResponse.body
+    return listRolesResBody['roles']
+  }
+
+  /**
+   * Creates a new role.
+   * 
+   * @param {string} name The name of the role.
+   * @returns {object} The role object.
+   */
+  async createRole (name) {
+    const { ManagementService } = this
+
+    const createRoleResponse = await ManagementService.CreateRole({
+      'body': {
+        'name': name
+      }
+    })
+    const createRoleResBody = createRoleResponse.body
+    return createRoleResBody
+  }
+
+  /**
+   * Deletes a role.
+   * 
+   * @param {string} roleId The ID of the role to-be deleted.
+   */
+  async deleteRole (roleId) {
+    const { ManagementService } = this
+    await ManagementService.DeleteRole({
+      'role_id': roleId
+    })
+  }
+
+  /**
+   * Assigns the specified role to the given user.
+   * 
+   * @param {string} userId The user ID.
+   * @param {string} roleId The role ID.
+   */
+  async assignRole (userId, roleId) {
+    const { ManagementService } = this
+    await ManagementService.AssignRole({
+      'user_id': userId,
+      'body': {
+        'role_id': roleId.toString()
+      }
+    })
+  }
+
+  /**
+   * Unassigns the specified role from the given user.
+   * 
+   * @param {string} userId The user ID.
+   * @param {string} roleId The role ID.
+   */
+  async unassignRole (userId, roleId) {
+    const { ManagementService } = this
+    await ManagementService.UnassignRole({
+      'user_id': userId,
+      'role_id': roleId
+    })
+  }
+
+  /**
+   * Lists the roles of a user.
+   *
+   * @param {string} userId The user ID.
+   * @returns {object[]} The list of roles.
+   */
+  async listRoleAssignments (userId) {
+    const { ManagementService } = this
+
+    const listRoleAssignmentsResponse = await ManagementService.ListRoleAssignments({
+      'user_id': userId
+    })
+    const listRoleAssignmentsResBody = listRoleAssignmentsResponse.body
+    return listRoleAssignmentsResBody['roles']
+  }
+
+  /**
+   * Lists of permissions for a role.
+   *
+   * @param {string} roleId The role ID.
+   * @returns {object[]} The list of permissions.
+   */
+  async listPermissionAssignments (roleId) {
+    const { ManagementService } = this
+
+    const listPermissionAssignmentsResponse = await ManagementService.ListPermissionAssignments({
+      'role_id': roleId
+    })
+    const listPermissionAssignmentsResBody = listPermissionAssignmentsResponse.body
+    return listPermissionAssignmentsResBody['permissions']
+  }
+
+  /**
+   * Lists the permissions of the current user.
+   *
+   * @returns {object[]} The list of permissions.
+   */
+  async listCurrentUserPermissions () {
+    const { ManagementService } = this
+
+    const listCurrentUserPermissionsResponse = await ManagementService.ListCurrentUserPermissions()
+    const listCurrentUserPermissionsResBody = listCurrentUserPermissionsResponse.body
+    return listCurrentUserPermissionsResBody['permissions']
+  }
+
+  /**
+   * Creates an user.
+   *
+   * @param {string} username The purposed username of the user.
+   * @param {string} password The purposed password of the user.
+   * @param {string} email The purposed email address of the user.
+   * @param {string} phone The purposed phone number of the user.
+   * @param {string} displayName The purposed display name of the user.
+   */
+  async createUser (username, password, email, phone, displayName) {
+    const { ManagementService } = this
+
+    // Step 1: Create a user
+    const createUserResponse = await ManagementService.CreateUser({
+      'body': {
+        'username': username,
+        'email': email,
+        'phone': phone,
+        'display_name': displayName
+      }
+    })
+    const createUserResBody = createUserResponse.body
+    const userId = createUserResBody['user']['id']
+
+    // Step 2: Change the password of the created user
+    const hashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(password)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
+    await ManagementService.ChangePassword({
+      'body': {
+        'user_id': userId.toString(),
+        'password_verifier': {
+          'salt': formatBuffer.toBase64(salt),
+          'verifier': formatBuffer.toBase64(verifier)
+        }
+      }
+    })
+  }
+
+  /**
+   * Changes a password of an user.
+   *
+   * @param {string} userId The user ID.
+   * @param {string} newPassword The purposed new password.
+   */
+  async changePassword (userId, newPassword) {
+    const { ManagementService } = this
+
+    const { username } = await this.getUser(userId)
+    const newHashedPassword = await scrypt(
+      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
+      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
+      formatBuffer.fromString('salt?'),
+      16384, 8, 1
+    )
+    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
+    await ManagementService.ChangePassword({
+      'body': {
+        'user_id': userId.toString(),
+        'password_verifier': {
+          'salt': formatBuffer.toBase64(salt),
+          'verifier': formatBuffer.toBase64(verifier)
+        }
+      }
+    })
+  }
+
+  /**
+   * Lists the sessions of a user.
+   *
+   * @param {string} userId The user ID.
+   * @param {number} pageSize The number of sessions per page.
+   * @param {string} pageToken The page token.
+   * @param {boolean} ascending Boolean flag indicating the order of the sessions.
+   * @returns {object[]} The list of sessions.
+   */
+  async listSessions (userId, pageSize, pageToken, ascending) {
+    const { ManagementService } = this
+
+    const listSessionsResponse = await ManagementService.ListSessions({
+      'user_id': userId,
+      'page_size': pageSize,
+      'page_token': pageToken,
+      'ascending': ascending
+    })
+    const listSessionsResBody = listSessionsResponse.body
+    return listSessionsResBody
+  }
+
+  /**
+   * Deletes a session.
+   *
+   * @param {number} sessionId The session ID to-be deleted.
+   */
+  async deleteSession (sessionId) {
+    const { ManagementService } = this
+    await ManagementService.DeleteSession({
+      'session_id': sessionId
+    })
+  }
+
+  /**
+   * Gets the metadata of a user.
+   *
+   * @param {number} userId The user ID.
+   * @returns {string} The metadata of the user.
+   */
+  async getMetadata (userId) {
+    const { ManagementService } = this
+
+    const getMetadataResponse = await ManagementService.GetMetadata({
+      'user_id': userId
+    })
+    const getMetadataResBody = getMetadataResponse.body
+    return {
+      userMetadata: getMetadataResBody['user_metadata'],
+      appMetadata: getMetadataResBody['app_metadata']
+    }
+  }
+
+  /**
+   * Updates the metadata for a given user.
+   *
+   * @param {number} userId The user ID.
+   * @param {string} userMetadata The purposed user metadata.
+   * @param {string} appMetadata The purposed app metadata.
+   * @returns {object} The updated metadata.
+   */
+  async updateMetadata (userId, userMetadata, appMetadata) {
+    const { ManagementService } = this
+    const updateMetadataResponse = await ManagementService.UpdateMetadata({
+      'user_id': userId,
+      'body': {
+        'user_metadata': userMetadata,
+        'app_metadata': appMetadata
+      }
+    })
+    const updateMetadataResBody = updateMetadataResponse.body
+    return {
+      userMetadata: updateMetadataResBody['user_metadata'],
+      appMetadata: updateMetadataResBody['app_metadata']
+    }
+  }
+
+  /**
+   * Constructs management client including interceptor for unauthorized and unauthenticated cases
+   * to run callbacks from client implementation.
+   *
+   * @private
+   */
+  async _getSwaggerClient () {
     let authorizations
     if (this.config.accessToken) {
       authorizations = {
@@ -72,526 +638,6 @@ class AuthCoreManagementClient {
             return reject(err)
           })
       })
-    }
-  }
-
-  /**
-   * Sets the access token
-   * @param {string} accessToken
-   */
-  async setAccessToken (accessToken) {
-    if (accessToken !== undefined) {
-      this.config.accessToken = accessToken
-      await this.getSwaggerMgmtClientAsync()
-    }
-  }
-
-  /**
-   * Gets the access token
-   * @returns {string} The access token
-   */
-  getAccessToken () {
-    return this.config.accessToken
-  }
-
-  // Management APIs
-
-  /**
-   * Gets the list of users
-   * @param {number} pageSize The number of items return for the page
-   * @param {string} pageToken The token required for the specific page result
-   * @param {boolean} ascending The order for the result
-   * @returns {object} Object include the list of users, next page token and total size of all audit logs return.
-   */
-  async listUsers (pageSize, pageToken, ascending) {
-    const { ManagementService } = this
-
-    const listUsersResponse = await ManagementService.ListUsers({
-      'page_size': pageSize,
-      'page_token': pageToken,
-      'ascending': ascending
-    })
-    const listUsersResBody = listUsersResponse.body
-    return listUsersResBody
-  }
-
-  /**
-   * Gets the user with given user ID
-   * @param {string} userId The string representation for the user ID
-   * @returns {object} The user with given ID
-   */
-  async getUser (userId) {
-    const { ManagementService } = this
-
-    const getUserResponse = await ManagementService.GetUser({
-      'user_id': userId.toString()
-    })
-    const getUserResBody = getUserResponse.body
-    return getUserResBody
-  }
-
-  /**
-   * Updates the user profile with given user ID
-   * @returns {object} The updated user information
-   */
-  async updateUserProfile (userId, userObject) {
-    const { ManagementService } = this
-
-    const updateUserResponse = await ManagementService.UpdateUser({
-      'user_id': userId,
-      'body': {
-        'user': userObject
-      }
-    })
-    const updateUserResBody = updateUserResponse.body
-    return updateUserResBody
-  }
-
-  /**
-   * Updates the user lock status with given user ID
-   * @returns {object} The updated user information
-   */
-  async updateUserLock (userId, locked, lockInDays, description) {
-    const { ManagementService } = this
-
-    let lockExpiredAt
-    if (locked) {
-      if (lockInDays === Infinity) {
-        lockExpiredAt = '2038-01-19T00:00:00Z'
-      } else if (parseFloat(lockInDays) > 0) {
-        lockExpiredAt = new Date(new Date().getTime() + 86400000 * parseFloat(lockInDays)).toISOString()
-      } else {
-        throw new Error('lock in days should be positive')
-      }
-    }
-
-    const updateUserResponse = await ManagementService.UpdateUser({
-      'user_id': userId,
-      'body': {
-        'user': {
-          'locked': locked,
-          'lock_expired_at': lockExpiredAt,
-          'lock_description': description
-        },
-        'type': 'LOCK'
-      }
-    })
-    const updateUserResBody = updateUserResponse.body
-    return updateUserResBody
-  }
-
-  /**
-   * Creates an email contact by admin
-   * @param {string} userId The id of the user
-   * @param {string} email The e-mail address to be added
-   */
-  async createEmailContact (userId, email) {
-    const { ManagementService } = this
-
-    const createContactResponse = await ManagementService.CreateContact({
-      'user_id': userId,
-      'body': {
-        'contact': {
-          'type': 'EMAIL',
-          'value': email
-        }
-      }
-    })
-    const createContactResBody = createContactResponse.body
-
-    const startVerifyContactResponse = await ManagementService.StartVerifyContact({
-      body: {
-        'contact_id': createContactResBody['id']
-      }
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  /**
-   * Creates an phone contact by admin
-   * @param {string} userId The id of the user
-   * @param {string} phone The phone to be added
-   */
-  async createPhoneContact (userId, phone) {
-    const { ManagementService } = this
-
-    const createContactResponse = await ManagementService.CreateContact({
-      'user_id': userId,
-      'body': {
-        'contact': {
-          'type': 'PHONE',
-          'value': phone
-        }
-      }
-    })
-    const createContactResBody = createContactResponse.body
-
-    const startVerifyContactResponse = await ManagementService.StartVerifyContact({
-      body: {
-        'contact_id': createContactResBody['id']
-      }
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  /**
-   * Gets the list of contacts for the given user ID
-   * @returns {array} The list of contacts
-   */
-  async listContacts (userId, type) {
-    const { ManagementService } = this
-
-    const listContactsResponse = await ManagementService.ListContacts({
-      'user_id': userId,
-      type: type
-    })
-    const listContactsResBody = listContactsResponse.body
-    return listContactsResBody
-  }
-
-  /**
-   * Updates a primary contact
-   * @param {number} contactId The contact to be updated as a primary contact
-   */
-  async updatePrimaryContact (contactId) {
-    const { ManagementService } = this
-
-    const updatePrimaryContactResponse = await ManagementService.UpdatePrimaryContact({
-      'contact_id': contactId
-    })
-    const updatePrimaryContactResBody = updatePrimaryContactResponse.body
-    return updatePrimaryContactResBody
-  }
-
-  /**
-   * Deletes a contact
-   * @param {number} contactId The contact to be deleted
-   */
-  async deleteContact (contactId) {
-    const { ManagementService } = this
-
-    const deleteContactResponse = await ManagementService.DeleteContact({
-      'contact_id': contactId
-    })
-    const deleteContactResBody = deleteContactResponse.body
-    return deleteContactResBody
-  }
-
-  /**
-   * Initiate the process of contact verification
-   * @param {number} contactId The contact to be verified
-   */
-  async startVerifyContact (contactId) {
-    const { ManagementService } = this
-
-    const startVerifyContactResponse = await ManagementService.StartVerifyContact({
-      'contact_id': (contactId).toString()
-    })
-    const startVerifyContactResBody = startVerifyContactResponse.body
-    return startVerifyContactResBody
-  }
-
-  /**
-   * Gets the list of second factors for the current user
-   * @returns {object[]} The list of second factors
-   */
-  async listSecondFactors (id) {
-    const { ManagementService } = this
-
-    const listSecondFactorsResponse = await ManagementService.ListSecondFactors({
-      'user_id': id.toString()
-    })
-    const listSecondFactorsResBody = listSecondFactorsResponse.body
-    return listSecondFactorsResBody['second_factors']
-  }
-
-  /**
-   * Gets the list of audit logs
-   * @param {number} pageSize The number of items return for the page
-   * @param {string} pageToken The token required for the specific page result
-   * @param {boolean} ascending The order for the result
-   * @returns {object} Object include the list of audit logs, next page token and total size of all audit logs return.
-   */
-  async listAuditLogs (pageSize, pageToken, ascending) {
-    const { ManagementService } = this
-
-    const listAuditLogsResponse = await ManagementService.ListAuditLogs({
-      'page_size': pageSize,
-      'page_token': pageToken,
-      'ascending': ascending
-    })
-    const listAuditLogsResBody = listAuditLogsResponse.body
-    return listAuditLogsResBody
-  }
-
-  /**
-   * Gets the list of audit logs for the given user ID
-   * @param {string} userId The id string respresents a user
-   * @param {number} pageSize The number of items return for the page
-   * @param {string} pageToken The token required for the specific page result
-   * @param {boolean} ascending The order for the result
-   * @returns {object} Object include the list of audit logs, next page token and total size of all audit logs return.
-   */
-  async listUserAuditLogs (userId, pageSize, pageToken, ascending) {
-    const { ManagementService } = this
-
-    const listUserAuditLogsResponse = await ManagementService.ListAuditLogs({
-      'user_id': userId,
-      'page_size': pageSize,
-      'page_token': pageToken,
-      'ascending': ascending
-    })
-    const listUserAuditLogsResBody = listUserAuditLogsResponse.body
-    return listUserAuditLogsResBody
-  }
-
-  /**
-   * Gets the list of roles
-   * @returns {array} The list of roles
-   */
-  async listRoles () {
-    const { ManagementService } = this
-
-    const listRolesResponse = await ManagementService.ListRoles()
-    const listRolesResBody = listRolesResponse.body
-    return listRolesResBody['roles']
-  }
-
-  async createRole (name) {
-    const { ManagementService } = this
-
-    const createRoleResponse = await ManagementService.CreateRole({
-      'body': {
-        'name': name
-      }
-    })
-    const createRoleResBody = createRoleResponse.body
-    return createRoleResBody
-  }
-
-  async deleteRole (roleId) {
-    const { ManagementService } = this
-
-    const deleteRoleResponse = await ManagementService.DeleteRole({
-      'role_id': roleId
-    })
-    const deleteRoleResBody = deleteRoleResponse.body
-    return deleteRoleResBody
-  }
-
-  /**
-   * Assigns the specified role to the given user
-   */
-  async assignRole (userId, roleId) {
-    const { ManagementService } = this
-
-    const assignRoleResponse = await ManagementService.AssignRole({
-      'user_id': userId,
-      'body': {
-        'role_id': roleId.toString()
-      }
-    })
-    const assignRoleResBody = assignRoleResponse.body
-    return assignRoleResBody
-  }
-
-  /**
-   * Unassigns the specified role from the given user
-   */
-  async unassignRole (userId, roleId) {
-    const { ManagementService } = this
-
-    const unassignRoleResponse = await ManagementService.UnassignRole({
-      'user_id': userId,
-      'role_id': roleId
-    })
-    const unassignRoleResBody = unassignRoleResponse.body
-    return unassignRoleResBody
-  }
-
-  /**
-   * Gets the list of roles for the given user ID
-   * @returns {array} The list of roles
-   */
-  async listRoleAssignments (userId) {
-    const { ManagementService } = this
-
-    const listRoleAssignmentsResponse = await ManagementService.ListRoleAssignments({
-      'user_id': userId
-    })
-    const listRoleAssignmentsResBody = listRoleAssignmentsResponse.body
-    return listRoleAssignmentsResBody['roles']
-  }
-
-  /**
-   * Gets the list of permissions for the given role ID
-   * @returns {array} The list of permissions
-   */
-  async listPermissionAssignments (roleId) {
-    const { ManagementService } = this
-
-    const listPermissionAssignmentsResponse = await ManagementService.ListPermissionAssignments({
-      'role_id': roleId
-    })
-    const listPermissionAssignmentsResBody = listPermissionAssignmentsResponse.body
-    return listPermissionAssignmentsResBody['permissions']
-  }
-
-  /**
-   * Gets the list of permissions for the current user
-   * @returns {array} The list of permissions
-   */
-  async listCurrentUserPermissions () {
-    const { ManagementService } = this
-
-    const listCurrentUserPermissionsResponse = await ManagementService.ListCurrentUserPermissions()
-    const listCurrentUserPermissionsResBody = listCurrentUserPermissionsResponse.body
-    return listCurrentUserPermissionsResBody['permissions']
-  }
-
-  /**
-   * Creates an user under an admin role
-   * @param {string} username
-   * @param {string} password
-   * @param {string} email
-   * @param {string} phone
-   * @param {string} displayName
-   */
-  async createUser (username, password, email, phone, displayName) {
-    const { ManagementService } = this
-
-    // Step 1: Create a user
-    const createUserResponse = await ManagementService.CreateUser({
-      'body': {
-        'username': username,
-        'email': email,
-        'phone': phone,
-        'display_name': displayName
-      }
-    })
-    const createUserResBody = createUserResponse.body
-    const userId = createUserResBody['user']['id']
-
-    // Step 2: Change the password of the created user
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
-    await ManagementService.ChangePassword({
-      'body': {
-        'user_id': userId.toString(),
-        'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
-        }
-      }
-    })
-  }
-
-  /**
-   * Changes a password of an user
-   * @param {string} userId
-   * @param {string} newPassword
-   */
-  async changePassword (userId, newPassword) {
-    const { ManagementService } = this
-
-    const { username } = await this.getUser(userId)
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
-    const changePasswordResponse = await ManagementService.ChangePassword({
-      'body': {
-        'user_id': userId.toString(),
-        'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
-        }
-      }
-    })
-    const changePasswordResBody = changePasswordResponse.body
-
-    return changePasswordResBody
-  }
-
-  /**
-   * Gets the list of sessions for a given user
-   * @returns {object[]} The list of sessions
-   */
-  async listSessions (userId, pageSize, pageToken, ascending) {
-    const { ManagementService } = this
-
-    const listSessionsResponse = await ManagementService.ListSessions({
-      'user_id': userId,
-      'page_size': pageSize,
-      'page_token': pageToken,
-      'ascending': ascending
-    })
-    const listSessionsResBody = listSessionsResponse.body
-    return listSessionsResBody
-  }
-
-  /**
-   * Delete session for a given session
-   * @param {number} sessionId The session to be deleted
-   */
-  async deleteSession (sessionId) {
-    const { ManagementService } = this
-
-    const deleteSessionResponse = await ManagementService.DeleteSession({
-      'session_id': sessionId
-    })
-    const deleteSessionResBody = deleteSessionResponse.body
-    return deleteSessionResBody
-  }
-
-  /**
-   * Gets the metadata for a given user.
-   * @param {number} userId
-   * @returns {string} The user metadata
-   */
-  async getMetadata (userId) {
-    const { ManagementService } = this
-
-    const getMetadataResponse = await ManagementService.GetMetadata({
-      'user_id': userId
-    })
-    const getMetadataResBody = getMetadataResponse.body
-    return {
-      userMetadata: getMetadataResBody['user_metadata'],
-      appMetadata: getMetadataResBody['app_metadata']
-    }
-  }
-
-  /**
-   * Updates the metadata for a given user.
-   * @param {number} userId
-   * @param {string} userMetadata
-   * @param {string} appMetadata
-   * @returns {string} The updated metadata
-   */
-  async updateMetadata (userId, userMetadata, appMetadata) {
-    const { ManagementService } = this
-    const updateMetadataResponse = await ManagementService.UpdateMetadata({
-      'user_id': userId,
-      'body': {
-        'user_metadata': userMetadata,
-        'app_metadata': appMetadata
-      }
-    })
-    const updateMetadataResBody = updateMetadataResponse.body
-    return {
-      userMetadata: updateMetadataResBody['user_metadata'],
-      appMetadata: updateMetadataResBody['app_metadata']
     }
   }
 }

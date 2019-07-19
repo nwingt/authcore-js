@@ -6,12 +6,17 @@ const jsrpClient = new jsrp.client()
 const formatBuffer = require('../utils/formatBuffer.js')
 
 /**
- * Creates the verifier
- * @param {string} username
- * @param {string} password
- * @returns {Object} Salt (buffer) and verifier (buffer)
+ * Creates a password verifier of a given username-password pair for the server to authenticate
+ * the user via the [secure remote password (SRP) protocol](https://tools.ietf.org/html/rfc5054).
+ *
+ * @private
+ * @param {string} username The username of a user.
+ * @param {string} password The password of a user.
+ * @returns {object} A SRP verifier for the username-password pair.
+ * @property {string} salt The salt used as a hash for the password.
+ * @property {string} verifier The password verifier defined by the SRP protocol.
  */
-function createVerifier (_, password) {
+function createVerifier (username, password) {
   return new Promise(function (resolve, reject) {
     jsrpClient.init({
       username: '',
@@ -20,10 +25,9 @@ function createVerifier (_, password) {
       jsrpClient.createVerifier(function (err, result) {
         /* istanbul ignore if */
         if (err) {
-          reject(err)
-          return
+          return reject(err)
         }
-        resolve({
+        return resolve({
           salt: formatBuffer.fromHex(result.salt),
           verifier: formatBuffer.fromHex(result.verifier)
         })
@@ -33,14 +37,20 @@ function createVerifier (_, password) {
 }
 
 /**
- * Get A and M1 for SRP.
- * @param {string} username
- * @param {string} password
- * @param {Buffer} salt
- * @param {Buffer} B
- * @returns {Object} A (Buffer) and M1 (Buffer) for verification
+ * Computes an one-time ephemeral key and the corresponding proof given the username-password pair,
+ * the salt and the server's one-time ephemeral key.
+ *
+ * @private
+ * @param {string} username The username of a user.
+ * @param {string} password The password of a user.
+ * @param {Buffer} salt The salt used as a hash for the password.
+ * @param {Buffer} B The one-time ephemeral key of the server.
+ * @returns {object} The SRP response for the username-password pair, under the corresponding
+ *          challenge.
+ * @property {string} A The one-time ephemeral key of the client.
+ * @property {string} M1 The proof defined by the SRP protocol.
  */
-async function getAandM1 (_, password, salt, B) {
+async function getAandM1 (username, password, salt, B) {
   return new Promise(function (resolve, reject) {
     jsrpClient.init({
       username: '',
@@ -49,7 +59,7 @@ async function getAandM1 (_, password, salt, B) {
       try {
         jsrpClient.setSalt(formatBuffer.toHex(salt))
         jsrpClient.setServerPublicKey(formatBuffer.toHex(B))
-        resolve({
+        return resolve({
           A: formatBuffer.fromHex(jsrpClient.getPublicKey()),
           M1: formatBuffer.fromHex(jsrpClient.getProof())
         })

@@ -4,14 +4,25 @@ const Swagger = require('swagger-client')
 const formatBuffer = require('../utils/formatBuffer.js')
 
 /**
- * Class interacting between AuthCore Web (and corresponding web clients) and the key vault.
- * Wrap interactive steps into functions.
- *
- * `config` is an object that contains:
- * 1. `apiBaseURL`: the base URL for the API endpoint.
- * 2. `callbacks`: the callback functions, listed below:
- *  - `unauthenticated`: callback when an user calls an API while not authenticated.
- * 3. `accessToken`: the access token of the user for the authenticated APIs.
+ * The class interacting between web client and AuthCore KeyVaultAPI server.
+ * 
+ * @public
+ * @param {object} config
+ * @param {string} config.apiBaseURL The base URL for the Authcore instance.
+ * @param {object} config.callbacks The set of callback functions to-be called.
+ * @param {Function} config.callbacks.unauthenticated The callback function when a user is
+ *        unauthenticated.
+ * @param {string} config.accessToken The access token of the user.
+ * @example
+ * const mgmtClient = await new AuthCoreKeyVaultClient({
+ *   apiBaseURL: 'https://auth.example.com',
+ *   callbacks: {
+ *     unauthenticated: function () {
+ *       alert('unauthenticated!')
+ *     }
+ *   },
+ *   accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJle...'
+ * })
  */
 class AuthCoreKeyVaultClient {
   constructor (config) {
@@ -25,10 +36,103 @@ class AuthCoreKeyVaultClient {
     })
   }
 
-    /**
-   * Constructs Swagger key vault client
+  /**
+   * Sets the access token and refreshes the Swagger client.
+   * 
+   * @public
+   * @param {string} accessToken The access token of the user.
    */
-  async getSwaggerKeyVaultClientAsync () {
+  async setAccessToken (accessToken) {
+    this.config.accessToken = accessToken
+    await this._getSwaggerClient()
+  }
+
+  /**
+   * Gets the access token.
+   * 
+   * @public
+   * @returns {string} The access token of the user.
+   */
+  getAccessToken () {
+    return this.config.accessToken
+  }
+
+  /**
+   * Creates a secret.
+   *
+   * @param {string} type The type of the secret.
+   * @param {number} size The size (in bytes) of the secret.
+   * @returns {object} The secret object. Contains only the secret id.
+   */
+  async createSecret (type, size) {
+    const { KeyVaultService } = this
+    const performOperationResponse = await KeyVaultService.PerformOperation({
+      'body': {
+        'create_secret': {
+          'type': type,
+          'size': size
+        }
+      }
+    })
+    const performOperationResBody = performOperationResponse.body
+    return performOperationResBody
+  }
+
+  /**
+   * Lists the hierarchical determistic (HD) child public keys of the current user, defined by
+   * [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki),
+   * [BIP-0039](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) and
+   * [BIP-0044](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
+   * 
+   * @param {string} pathPrefix The prefix of the derivation path.
+   * @returns {string[]} The HD child public keys.
+   */
+  async listHDChildPublicKeys (pathPrefix) {
+    const { KeyVaultService } = this
+    const performOperationResponse = await KeyVaultService.PerformOperation({
+      'body': {
+        'list_hd_child_public_keys': {
+          'path': `${pathPrefix}`
+        }
+      }
+    })
+    const performOperationResBody = performOperationResponse.body
+    return performOperationResBody['hd_child_public_keys'] || []
+  }
+
+  /**
+   * Signs an Ethereum payload (transaction / message).
+   *
+   * @param {string} objectId The object ID.
+   * @param {string} walletPath The path of the wallet.
+   * @param {Buffer} data The payload to be signed.
+   * @param {string} type The type of the payload (`transaction` / `message` / `personal_message` /
+   *        `typed_message`).
+   * @returns {string} The signature of the given payload.
+   */
+  async ethereumSign (objectId, walletPath, data, type) {
+    const { KeyVaultService } = this
+    const performOperationResponse = await KeyVaultService.PerformOperation({
+      'body': {
+        'ethereum_sign': {
+          'type': type,
+          'object_id': objectId,
+          'wallet_path': walletPath,
+          'data': formatBuffer.toHex(data)
+        }
+      }
+    })
+    const performOperationResBody = performOperationResponse.body
+    return performOperationResBody['signature']
+  }
+
+  /**
+   * Constructs key vault client including interceptor for unauthorized and unauthenticated cases
+   * to run callbacks from client implementation.
+   *
+   * @private
+   */
+  async _getSwaggerClient () {
     let authorizations
     if (this.config.accessToken) {
       authorizations = {
@@ -70,84 +174,6 @@ class AuthCoreKeyVaultClient {
           })
       })
     }
-  }
-
-  /**
-   * Sets the access token
-   * @param {string} accessToken
-   */
-  async setAccessToken (accessToken) {
-    if (accessToken !== undefined) {
-      this.config.accessToken = accessToken
-      await this.getSwaggerKeyVaultClientAsync()
-    }
-  }
-
-  /**
-   * Gets the access token
-   * @returns {string} The access token
-   */
-  getAccessToken () {
-    return this.config.accessToken
-  }
-
-  // Key Vault APIs
-  /**
-   * Create a secret.
-   * @param {string} type The type of the secret
-   * @param {number} size The size (in bytes) of the secret
-   */
-  async createSecret (type, size) {
-    const { KeyVaultService } = this
-    const performOperationResponse = await KeyVaultService.PerformOperation({
-      'body': {
-        'create_secret': {
-          'type': type,
-          'size': size
-        }
-      }
-    })
-    const performOperationResBody = performOperationResponse.body
-    return performOperationResBody
-  }
-
-  /**
-   * List the HD child public keys the current user has.
-   */
-  async listHDChildPublicKeys (pathPrefix) {
-    const { KeyVaultService } = this
-    const performOperationResponse = await KeyVaultService.PerformOperation({
-      'body': {
-        'list_hd_child_public_keys': {
-          'path': `${pathPrefix}`
-        }
-      }
-    })
-    const performOperationResBody = performOperationResponse.body
-    return performOperationResBody['hd_child_public_keys'] || []
-  }
-
-  /**
-   * Signs an Ethereum payload (transaction / message).
-   *
-   * @param {string} objectId
-   * @param {string} walletPath
-   * @param {buffer} data The payload to be signed.
-   */
-  async ethereumSign (objectId, walletPath, data, type) {
-    const { KeyVaultService } = this
-    const performOperationResponse = await KeyVaultService.PerformOperation({
-      'body': {
-        'ethereum_sign': {
-          'type': type,
-          'object_id': objectId,
-          'wallet_path': walletPath,
-          'data': formatBuffer.toHex(data)
-        }
-      }
-    })
-    const performOperationResBody = performOperationResponse.body
-    return performOperationResBody['signature']
   }
 }
 
