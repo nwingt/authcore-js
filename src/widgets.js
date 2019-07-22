@@ -1,9 +1,10 @@
 const crypto = require('crypto')
+const color = require('color')
 const formatBuffer = require('./utils/formatBuffer')
 
 /**
  * Clears the children of a DOM element.
- * 
+ *
  * @private
  * @param {*} id The ID of the DOM element.
  */
@@ -21,6 +22,9 @@ function clearChildren (id) {
  * @param {string} options.container The ID of the DOM element that injects the widget.
  * @param {string} options.company The company name used for the widget.
  * @param {string} options.logo The URL for the logo used for the widget.
+ * @param {object} options.primary The primary colour for the widget.
+ * @param {object} options.success The success colour for the widget.
+ * @param {object} options.danger The danger colour for the widget.
  * @param {object} options.callbacks The set of callback functions to-be called.
  * @param {string} options.root The hostname for Authcore widgets.
  * @param {boolean} [options.display=true] Boolean flag indicating if the widget is visible.
@@ -124,6 +128,24 @@ class AuthCoreWidget {
   }
 
   /**
+   * Build colour code in encodeURI format.
+   *
+   * @private
+   * @param {string} colour The colour to be built.
+   * @returns {string} The encodeURI colour code.
+   **/
+  buildColourCode (colour) {
+    if (typeof colour === 'string') {
+      try {
+        return encodeURIComponent(`#${color(colour).hex().slice(1)}`)
+      } catch (err) {
+        throw new Error('colour parameters have to be correct format')
+      }
+    }
+    return undefined
+  }
+
+  /**
    * Build widget src with extra parameters.
    *
    * @private
@@ -131,7 +153,15 @@ class AuthCoreWidget {
    * @param {string} name The name of the widget.
    **/
   buildWidgetSrc (options, name) {
-    let { logo, company, internal = false } = options
+    let {
+      logo,
+      company,
+      primary = undefined,
+      success = undefined,
+      danger = undefined,
+      internal = false
+    } = options
+
     if (logo === undefined) {
       logo = ''
     } else {
@@ -143,21 +173,33 @@ class AuthCoreWidget {
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
-    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}`
+    primary = this.buildColourCode(primary)
+    success = this.buildColourCode(success)
+    danger = this.buildColourCode(danger)
+    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}`
   }
 }
 
 
 /**
  * The register widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Register extends AuthCoreWidget {
   constructor (options) {
     super(options)
     // Assume required verification in registration
-    let { logo, company, verification = true, internal = false } = options
+    let {
+      logo,
+      company,
+      primary = undefined,
+      success = undefined,
+      danger = undefined,
+      verification = true,
+      internal = false
+    } = options
+
     if (logo === undefined) {
       logo = ''
     } else {
@@ -169,19 +211,23 @@ class Register extends AuthCoreWidget {
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
+    primary = this.buildColourCode(primary)
+    success = this.buildColourCode(success)
+    danger = this.buildColourCode(danger)
+
     if (typeof verification !== 'boolean') {
       throw new Error('verification must be boolean')
     }
     this.callbacks['_successRegister'] = (data) => {
-      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}&verification=${verification}`
+      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}&verification=${verification}`
     }
-    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&internal=${internal}`
+    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}`
   }
 }
 
 /**
  * The login widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Login extends AuthCoreWidget {
@@ -193,7 +239,7 @@ class Login extends AuthCoreWidget {
 
 /**
  * The verification widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Verification extends AuthCoreWidget {
@@ -205,7 +251,7 @@ class Verification extends AuthCoreWidget {
 
 /**
  * The contacts widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Contacts extends AuthCoreWidget {
@@ -217,7 +263,7 @@ class Contacts extends AuthCoreWidget {
 
 /**
  * The profile widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Profile extends AuthCoreWidget {
@@ -229,7 +275,7 @@ class Profile extends AuthCoreWidget {
 
 /**
  * The security widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Security extends AuthCoreWidget {
@@ -241,7 +287,7 @@ class Security extends AuthCoreWidget {
 
 /**
  * The sessions widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class Sessions extends AuthCoreWidget {
@@ -253,7 +299,7 @@ class Sessions extends AuthCoreWidget {
 
 /**
  * The ethereum sign approval widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class EthereumSignApproval extends AuthCoreWidget {
@@ -273,7 +319,7 @@ class EthereumSignApproval extends AuthCoreWidget {
 
 /**
  * The refresh token widget that is used to refresh an access token.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class RefreshToken extends AuthCoreWidget {

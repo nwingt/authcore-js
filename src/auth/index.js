@@ -935,6 +935,16 @@ class AuthCoreAuthClient {
   }
 
   /**
+   * Signs out from the current session.
+   * 
+   * @public
+   */
+  async signOut () {
+    const { AuthService } = this
+    await AuthService.DeleteCurrentSession()
+  }
+
+  /**
    * Constructs auth client including interceptor for unauthorized and unauthenticated cases to run
    * callbacks from client implementation.
    *
