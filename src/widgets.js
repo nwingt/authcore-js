@@ -318,6 +318,26 @@ class EthereumSignApproval extends AuthCoreWidget {
 }
 
 /**
+ * The Cosmos sign approval widget.
+ * 
+ * @augments AuthCoreWidget
+ */
+class CosmosSignApproval extends AuthCoreWidget {
+  constructor (options) {
+    super(options)
+    this.buildWidgetSrc(options, 'cosmos-sign-approval')
+    this.callbacks['_onCosmosSignApproved'] = () => {
+      options.approve()
+      this.destroy()
+    }
+    this.callbacks['_onCosmosSignRejected'] = () => {
+      options.reject()
+      this.destroy()
+    }
+  }
+}
+
+/**
  * The refresh token widget that is used to refresh an access token.
  *
  * @augments AuthCoreWidget
@@ -354,6 +374,7 @@ const AuthCoreWidgets = {
   Security,
   Sessions,
   EthereumSignApproval,
+  CosmosSignApproval,
   RefreshToken
 }
 

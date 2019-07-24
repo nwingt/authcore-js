@@ -127,6 +127,29 @@ class AuthCoreKeyVaultClient {
   }
 
   /**
+   * Signs an Cosmos payload.
+   *
+   * @param {string} objectId The object ID.
+   * @param {string} walletPath The path of the wallet.
+   * @param {string} data The payload to be signed.
+   * @returns {string} The signature of the given payload.
+   */
+  async cosmosSign (objectId, walletPath, data) {
+    const { KeyVaultService } = this
+    const performOperationResponse = await KeyVaultService.PerformOperation({
+      'body': {
+        'cosmos_sign': {
+          'object_id': objectId,
+          'wallet_path': walletPath,
+          'data': formatBuffer.toHex(formatBuffer.fromString(data))
+        }
+      }
+    })
+    const performOperationResBody = performOperationResponse.body
+    return performOperationResBody['signature']
+  }
+
+  /**
    * Constructs key vault client including interceptor for unauthorized and unauthenticated cases
    * to run callbacks from client implementation.
    *

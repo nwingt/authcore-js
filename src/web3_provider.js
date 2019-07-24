@@ -15,6 +15,7 @@ const formatBuffer = require('./utils/formatBuffer')
  * @param {object} config The config object.
  * @param {AuthCoreKeyVaultClient} config.authcoreClient The KeyVaultClient instance for the API
  *        calls.
+ * @param {string} config.authcoreWidgetsUrl The base URL for the Authcore widgets.
  * @param {string} [config.pathPrefix=m/44'/60'/0'/0] The prefix of the derivation path.
  * @param {number} [config.accountCount=1] The number of accounts.
  * @param {number} [config.chainId=1] The chain ID.
@@ -25,6 +26,7 @@ const formatBuffer = require('./utils/formatBuffer')
  */
 function AuthCoreWalletSubprovider (config) {
   const authcoreClient = config.authcoreClient
+  const authcoreWidgetsUrl = config.authcoreWidgetsUrl
   const pathPrefix = config.pathPrefix || `m/44'/60'/0'/0`
   const accountCount = config.accountCount || 1
   const chainId = config.chainId || 1
@@ -81,7 +83,7 @@ function AuthCoreWalletSubprovider (config) {
     return function (txObject, cb) {
       new AuthCoreWidgets.EthereumSignApproval({
         container,
-        root: config.authcoreWidgetsUrl,
+        root: authcoreWidgetsUrl,
         accessToken: authcoreClient.getAccessToken(),
         approve: () => cb(null, true),
         reject: () => cb(null, false)
