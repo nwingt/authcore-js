@@ -209,6 +209,21 @@ suite('auth/index.js', function () {
       assert.isTrue(nock.isDone())
     })
 
+    test('should be able to update current user profile', async function () {
+      // Mock
+      mockAPI([
+        { type: 'SwaggerClient' },
+        { type: 'UpdateCurrentUser' }
+      ])
+      // Test
+      const authClient = await new AuthCoreAuthClient({
+        apiBaseURL: 'http://0.0.0.0:13337',
+        accessToken: 'AN_ACCESS_TOKEN'
+      })
+      await authClient.updateCurrentUser()
+      assert.isTrue(nock.isDone())
+    })
+
     test('should be able to obtain the user metadata for the current user', async function () {
       // Mock
       mockAPI([

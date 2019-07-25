@@ -280,9 +280,9 @@ class AuthCoreAuthClient {
    * @returns {object} The updated current user.
    */
   async updateCurrentUser (user) {
-    const { authcoreAPI } = this
+    const { AuthService } = this
 
-    const currentUser = await authcoreAPI.AuthService.UpdateCurrentUser({
+    const currentUser = await AuthService.UpdateCurrentUser({
       'body': {
         'user': user
       }

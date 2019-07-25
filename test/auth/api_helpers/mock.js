@@ -119,6 +119,14 @@ function mockAPI(steps) {
             { 'Content-Type': 'application/json' }
           )
         break
+      case 'UpdateCurrentUser':
+        nock('http://0.0.0.0:13337', { reqheaders: { authorization: /^Bearer/ } })
+          .put('/api/auth/users/current').times(count)
+          .replyWithFile(
+            200, `${__dirname}/update_current_user.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
       case 'CreateProofOfWorkChallenge':
         nock('http://0.0.0.0:13337').post('/api/auth/challenges/proof_of_work').times(count)
           .replyWithFile(
