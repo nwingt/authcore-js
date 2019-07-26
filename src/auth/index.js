@@ -506,6 +506,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} email The e-mail address to be created as a contact.
+   * @returns {object} The newly created email id and value.
    */
   async createEmailContact (email) {
     const { AuthService } = this
@@ -523,6 +524,7 @@ class AuthCoreAuthClient {
         'contact_id': createContactResBody['id']
       }
     })
+    return createContactResBody
   }
 
   /**
@@ -530,6 +532,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} phone The phone number to be created as a contact.
+   * @returns {object} The newly created phone id and value.
    */
   async createPhoneContact (phone) {
     const { AuthService } = this
@@ -547,6 +550,7 @@ class AuthCoreAuthClient {
         'contact_id': createContactResBody['id']
       }
     })
+    return createContactResBody
   }
 
   /**
