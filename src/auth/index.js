@@ -301,6 +301,7 @@ class AuthCoreAuthClient {
    * @param {string} user.email The purposed email address of the user.
    * @param {string} user.password The purposed password of the user.
    * @param {string} user.displayName The purposed display name of the user.
+   * @returns {AccessToken} The access token.
    */
   async createUser (user) {
     const { username = '', phone = '', email = '', password } = user
@@ -332,7 +333,7 @@ class AuthCoreAuthClient {
       }
     })
     const createUserResBody = createUserResponse.body
-    await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
+    const accessToken = await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
     // We need to replace the old AuthService to use the new instance with access token.
     AuthService = this.AuthService
 
@@ -352,6 +353,7 @@ class AuthCoreAuthClient {
         }
       }
     })
+    return accessToken
   }
 
   /**
