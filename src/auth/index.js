@@ -327,7 +327,8 @@ class AuthCoreAuthClient {
         'username': username,
         'email': email,
         'phone': phone,
-        'display_name': displayName
+        'display_name': displayName,
+        'send_verification': true
       }
     })
     const createUserResBody = createUserResponse.body
@@ -349,6 +350,71 @@ class AuthCoreAuthClient {
           'salt': formatBuffer.toBase64(salt),
           'verifier': formatBuffer.toBase64(verifier)
         }
+      }
+    })
+  }
+
+  /**
+   * Creates an user using OAuth.
+   *
+   * @public
+   * @param {object} user The user object.
+   * @param {string} user.username The purposed username of the user.
+   * @param {string} user.phone The purposed phone number of the user.
+   * @param {string} user.email The purposed email address of the user.
+   * @param {string} user.displayName The purposed display name of the user.
+   * @param {object} oauth The OAuth object.
+   * @param {string} oauth.accessToken The access token for OAuth.
+   * @param {string} oauth.service The service for OAuth.
+   */
+  async createUserByOAuth (user, oauth) {
+    const { username = '', phone = '', email = '' } = user
+    let { displayName } = user
+    if (displayName === undefined) {
+      if (username !== '') {
+        displayName = username
+      } else if (email !== '') {
+        displayName = email
+      } else if (phone !== '') {
+        displayName = phone
+      } else {
+        throw new Error('displayName cannot be undefined')
+      }
+    }
+    let { AuthService } = this
+
+    // Step 1: Create a user
+    const createUserResponse = await AuthService.CreateUser({
+      'body': {
+        'username': username,
+        'email': email,
+        'phone': phone,
+        'display_name': displayName,
+        'send_verification': false
+      }
+    })
+    const createUserResBody = createUserResponse.body
+    await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
+    // We need to replace the old AuthService to use the new instance with access token.
+    AuthService = this.AuthService
+
+    // Step 2: Verify the contact by OAuth access token
+    await AuthService.CompleteVerifyContact({
+      'body': {
+        'contact': {
+          'type': 'EMAIL',
+          'value': email
+        },
+        'oauth_access_token': oauth.accessToken,
+        'service': oauth.service
+      }
+    })
+
+    // Step 3: Create a OAuth factor by OAuth access token
+    await AuthService.CreateOAuthFactorByAccessToken({
+      'body': {
+        'access_token': oauth.accessToken,
+        'service': oauth.service
       }
     })
   }
@@ -851,12 +917,13 @@ class AuthCoreAuthClient {
    * @param {string} state An opaque value used by the client to maintain the state between the
    *        request and callback.
    * @param {string} code The authorization code returned by the external OAuth service.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {object} An object consisting of `authentication_state`, `create_account` and
+   *          `preferred_email`.
    */
   async authenticateOAuth (service, state, code) {
     const { AuthService } = this
 
-    const authenticateOAuthResponse = await AuthService.Authenticate({
+    const authenticateOAuthResponse = await AuthService.AuthenticateOAuth({
       'body': {
         'temporary_token': state, // = temporaryToken
         'oauth_response': {
@@ -866,6 +933,9 @@ class AuthCoreAuthClient {
       }
     })
     const authenticateOAuthResBody = authenticateOAuthResponse.body
+    if (authenticateOAuthResBody['authentication_state']) {
+      this._updateChallenges(authenticateOAuthResBody['authentication_state'])
+    }
     return authenticateOAuthResBody
   }
 
