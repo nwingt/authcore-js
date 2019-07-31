@@ -1,5 +1,5 @@
 yarn audit
-if [ $? -eq 4 ]
+if [ $? -gt 4 ]
 then
   exit 1
 fi
