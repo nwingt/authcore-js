@@ -517,20 +517,40 @@ class AuthCoreAuthClient {
   }
 
   /**
+   * Start creating SMS as a second factor for the current user.
+   *
+   * @public
+   * @param {string} phoneNumber The phone number for the SMS authentication.
+   */
+  async startCreateSMSSecondFactor (phoneNumber) {
+    const { AuthService } = this
+
+    await AuthService.StartCreateSecondFactor({
+      'body': {
+        'sms_info': {
+          'phone_number': phoneNumber
+        }
+      }
+    })
+  }
+
+  /**
    * Creates a SMS authentication as a second factor for the current user.
    *
    * @public
    * @param {string} phoneNumber The phone number for the SMS authentication.
+   * @param {string} smsCode The sms code for verifying the authentication setting.
    * @returns {object} The second factor object.
    */
-  async createSMSSecondFactor (phoneNumber) {
+  async createSMSSecondFactor (phoneNumber, smsCode) {
     const { AuthService } = this
 
     const createSecondFactorResponse = await AuthService.CreateSecondFactor({
       'body': {
         'sms_info': {
           'phone_number': phoneNumber
-        }
+        },
+        'answer': smsCode
       }
     })
     const createSecondFactorResBody = createSecondFactorResponse.body

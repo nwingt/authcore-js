@@ -17,6 +17,7 @@ suite('widgets.js', function () {
             <div id="authcore-register-widget"></div>
             <div id="authcore-sign-in-widget"></div>
             <div id="authcore-contacts-widget"></div>
+            <div id="authcore-setting-widget"></div>
           </body>
         </html>
       `)
@@ -427,6 +428,22 @@ suite('widgets.js', function () {
         assert.exists(iframe)
 
         assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/contacts/)
+      })
+    })
+
+    suite('Setting widget', function () {
+      test('should be able to monut an iframe', async function () {
+        // Preparing
+        new AuthCoreWidgets.Setting({
+          container: 'authcore-setting-widget',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-setting-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/setting/)
       })
     })
 
