@@ -274,26 +274,14 @@ class Profile extends AuthCoreWidget {
 }
 
 /**
- * The security widget.
+ * The setting widget.
  *
  * @augments AuthCoreWidget
  */
-class Security extends AuthCoreWidget {
+class Setting extends AuthCoreWidget {
   constructor (options) {
     super(options)
-    this.buildWidgetSrc(options, 'security')
-  }
-}
-
-/**
- * The sessions widget.
- *
- * @augments AuthCoreWidget
- */
-class Sessions extends AuthCoreWidget {
-  constructor (options) {
-    super(options)
-    this.buildWidgetSrc(options, 'sessions')
+    this.buildWidgetSrc(options, 'setting')
   }
 }
 
@@ -371,8 +359,7 @@ const AuthCoreWidgets = {
   Verification,
   Contacts,
   Profile,
-  Security,
-  Sessions,
+  Setting,
   EthereumSignApproval,
   CosmosSignApproval,
   RefreshToken
