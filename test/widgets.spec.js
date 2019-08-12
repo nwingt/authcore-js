@@ -165,7 +165,7 @@ suite('widgets.js', function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          primary: '#0088ff',
+          primaryColour: '#0088ff',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -173,13 +173,13 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /primary=%230088FF/)
+        assert.match(iframe.src, /primaryColour=%230088FF/)
       })
       test('should be able to set success colour for widget', async function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          success: '#0088ff',
+          successColour: '#0088ff',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -187,13 +187,13 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /success=%230088FF/)
+        assert.match(iframe.src, /successColour=%230088FF/)
       })
       test('should be able to set danger colour for widget', async function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          danger: '#0088ff',
+          dangerColour: '#0088ff',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -201,14 +201,14 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /danger=%230088FF/)
+        assert.match(iframe.src, /dangerColour=%230088FF/)
       })
 
       test('should be able to set primary colour using colour word for widget', async function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          primary: 'blue',
+          primaryColour: 'blue',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -216,13 +216,13 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /primary=%230000FF/)
+        assert.match(iframe.src, /primaryColour=%230000FF/)
       })
       test('should be able to set success colour using colour word for widget', async function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          success: 'blue',
+          successColour: 'blue',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -230,13 +230,13 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /success=%230000FF/)
+        assert.match(iframe.src, /successColour=%230000FF/)
       })
       test('should be able to set danger colour using colour word for widget', async function () {
         // Preparing
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          danger: 'blue',
+          dangerColour: 'blue',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -244,14 +244,14 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /danger=%230000FF/)
+        assert.match(iframe.src, /dangerColour=%230000FF/)
       })
 
       test('should not be able to set primary colour with wrong format', async function () {
         // Testing
         assert.throws(() => {new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          primary: '0088ff',
+          primaryColour: '0088ff',
           root: 'http://0.0.0.0:1337'
         })}, Error, 'colour parameters have to be correct format')
       })
@@ -259,7 +259,7 @@ suite('widgets.js', function () {
         // Testing
         assert.throws(() => {new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
-          success: '0088ff',
+          successColour: '0088ff',
           root: 'http://0.0.0.0:1337'
         })}, Error, 'colour parameters have to be correct format')
       })
@@ -268,7 +268,7 @@ suite('widgets.js', function () {
         assert.throws(() => {
           new AuthCoreWidgets.Login({
             container: 'authcore-sign-in-widget',
-            danger: '0088ff',
+            dangerColour: '0088ff',
             root: 'http://0.0.0.0:1337'
           })
         }, Error, 'colour parameters have to be correct format')
@@ -334,7 +334,7 @@ suite('widgets.js', function () {
         // Preparing
         const widget = new AuthCoreWidgets.Register({
           container: 'authcore-register-widget',
-          primary: '#0088ff',
+          primaryColour: '#0088ff',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -342,7 +342,7 @@ suite('widgets.js', function () {
         const iframe = document.getElementById('authcore-register-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
 
-        assert.match(iframe.src, /primary=%230088FF/)
+        assert.match(iframe.src, /primaryColour=%230088FF/)
       })
     })
 
