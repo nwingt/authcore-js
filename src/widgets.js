@@ -82,7 +82,7 @@ class AuthCoreWidget {
         data: options.accessToken
       }, options.root)
     }
-    this.callbacks['_unauthenticated_widget'] = () => {
+    this.callbacks['_unauthenticated'] = () => {
     }
 
     // We are writing arrow functions as we want a specific scope for `this`.
@@ -156,9 +156,9 @@ class AuthCoreWidget {
     let {
       logo,
       company,
-      primary = undefined,
-      success = undefined,
-      danger = undefined,
+      primaryColour = undefined,
+      successColour = undefined,
+      dangerColour = undefined,
       internal = false
     } = options
 
@@ -173,10 +173,10 @@ class AuthCoreWidget {
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
-    primary = this.buildColourCode(primary)
-    success = this.buildColourCode(success)
-    danger = this.buildColourCode(danger)
-    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}`
+    primaryColour = this.buildColourCode(primaryColour)
+    successColour = this.buildColourCode(successColour)
+    dangerColour = this.buildColourCode(dangerColour)
+    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}`
   }
 }
 
@@ -193,9 +193,9 @@ class Register extends AuthCoreWidget {
     let {
       logo,
       company,
-      primary = undefined,
-      success = undefined,
-      danger = undefined,
+      primaryColour = undefined,
+      successColour = undefined,
+      dangerColour = undefined,
       verification = true,
       internal = false
     } = options
@@ -211,17 +211,17 @@ class Register extends AuthCoreWidget {
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
-    primary = this.buildColourCode(primary)
-    success = this.buildColourCode(success)
-    danger = this.buildColourCode(danger)
+    primaryColour = this.buildColourCode(primaryColour)
+    successColour = this.buildColourCode(successColour)
+    dangerColour = this.buildColourCode(dangerColour)
 
     if (typeof verification !== 'boolean') {
       throw new Error('verification must be boolean')
     }
     this.callbacks['_successRegister'] = (data) => {
-      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}&verification=${verification}`
+      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
     }
-    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&primary=${primary}&success=${success}&danger=${danger}&internal=${internal}`
+    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}`
   }
 }
 
@@ -337,14 +337,14 @@ class RefreshToken extends AuthCoreWidget {
     let containerClass = 'refresh-token'
     this.widget.className = containerClass
     this.widget.src = `${options.root}/refresh-token?cid=${this.containerId}`
-    this.callbacks['_unauthenticated_tokenUpdated'] = () => {
+    this.callbacks['_onTokenUpdated'] = () => {
       // Remove all refresh token widgets
       const elms = document.getElementsByClassName(containerClass)
       while (elms.length > 0) {
         elms[0].remove()
       }
     }
-    this.callbacks['_unauthenticated_tokenUpdatedFail'] = () => {
+    this.callbacks['_onTokenUpdatedFail'] = () => {
       const elms = document.getElementsByClassName(containerClass)
       while (elms.length > 0) {
         elms[0].remove()
