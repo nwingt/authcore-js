@@ -284,9 +284,8 @@ suite('widgets.js', function () {
         })
 
         window.addEventListener('message', e => {
-          const { type, data } = e.data
+          const { type } = e.data
           if (type === 'AuthCore_successRegister') {
-            assert.deepEqual(data.accessToken, 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw')
             done()
           }
         })
@@ -298,9 +297,7 @@ suite('widgets.js', function () {
 
         window.postMessage({
           type: 'AuthCore_successRegister',
-          data: {
-            accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw'
-          }
+          data: {}
         }, '*')
       })
 
@@ -355,9 +352,8 @@ suite('widgets.js', function () {
           root: 'http://0.0.0.0:1337'
         })
         window.addEventListener('message', e => {
-          const { type, data } = e.data
+          const { type } = e.data
           if (type === 'AuthCore_successRegister') {
-            assert.deepEqual(data.accessToken, 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw')
             done()
           }
         })
@@ -371,9 +367,7 @@ suite('widgets.js', function () {
 
         window.postMessage({
           type: 'AuthCore_successRegister',
-          data: {
-            accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw'
-          }
+          data: {}
         }, '*')
       })
 

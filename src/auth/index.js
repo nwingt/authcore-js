@@ -368,6 +368,7 @@ class AuthCoreAuthClient {
    * @param {object} oauth The OAuth object.
    * @param {string} oauth.accessToken The access token for OAuth.
    * @param {string} oauth.service The service for OAuth.
+   * @returns {AccessToken} The access token.
    */
   async createUserByOAuth (user, oauth) {
     const { username = '', phone = '', email = '' } = user
@@ -396,7 +397,7 @@ class AuthCoreAuthClient {
       }
     })
     const createUserResBody = createUserResponse.body
-    await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
+    const accessToken = await this.createAccessTokenByRefreshToken(createUserResBody['refresh_token'])
     // We need to replace the old AuthService to use the new instance with access token.
     AuthService = this.AuthService
 
@@ -419,6 +420,7 @@ class AuthCoreAuthClient {
         'service': oauth.service
       }
     })
+    return accessToken
   }
 
   /**
