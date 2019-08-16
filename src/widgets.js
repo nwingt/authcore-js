@@ -151,15 +151,17 @@ class AuthCoreWidget {
    * @private
    * @param {object} options The options object.
    * @param {string} name The name of the widget.
+   * @param {Function} extraSetting Extra setting other than building widget src. Provide all values which are sanitized from options.
    **/
-  buildWidgetSrc (options, name) {
+  buildWidgetSrc (options, name, extraSetting) {
     let {
       logo,
       company,
       primaryColour = undefined,
       successColour = undefined,
       dangerColour = undefined,
-      internal = false
+      internal = false,
+      verification = true
     } = options
 
     if (logo === undefined) {
@@ -173,10 +175,16 @@ class AuthCoreWidget {
     if (typeof internal !== 'boolean') {
       throw new Error('internal must be boolean')
     }
+    if (typeof verification !== 'boolean') {
+      throw new Error('verification must be boolean')
+    }
     primaryColour = this.buildColourCode(primaryColour)
     successColour = this.buildColourCode(successColour)
     dangerColour = this.buildColourCode(dangerColour)
     this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}`
+    if (typeof extraSetting === 'function') {
+      extraSetting({ logo, company, primaryColour, successColour, dangerColour, internal, verification })
+    }
   }
 }
 
@@ -189,39 +197,11 @@ class AuthCoreWidget {
 class Register extends AuthCoreWidget {
   constructor (options) {
     super(options)
-    // Assume required verification in registration
-    let {
-      logo,
-      company,
-      primaryColour = undefined,
-      successColour = undefined,
-      dangerColour = undefined,
-      verification = true,
-      internal = false
-    } = options
-
-    if (logo === undefined) {
-      logo = ''
-    } else {
-      logo = encodeURIComponent(logo)
-    }
-    if (company !== undefined) {
-      company = encodeURIComponent(company)
-    }
-    if (typeof internal !== 'boolean') {
-      throw new Error('internal must be boolean')
-    }
-    primaryColour = this.buildColourCode(primaryColour)
-    successColour = this.buildColourCode(successColour)
-    dangerColour = this.buildColourCode(dangerColour)
-
-    if (typeof verification !== 'boolean') {
-      throw new Error('verification must be boolean')
-    }
-    this.callbacks['_successRegister'] = (data) => {
-      this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
-    }
-    this.widget.src = `${options.root}/register?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}`
+    this.buildWidgetSrc(options, 'register', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
+      this.callbacks['_successRegister'] = (data) => {
+        this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
+      }
+    })
   }
 }
 
@@ -233,7 +213,11 @@ class Register extends AuthCoreWidget {
 class Login extends AuthCoreWidget {
   constructor (options) {
     super(options)
-    this.buildWidgetSrc(options, 'signin')
+    this.buildWidgetSrc(options, 'signin', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
+      this.callbacks['_successRegister'] = (data) => {
+        this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
+      }
+    })
   }
 }
 
