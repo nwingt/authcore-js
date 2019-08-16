@@ -198,7 +198,8 @@ class Register extends AuthCoreWidget {
   constructor (options) {
     super(options)
     this.buildWidgetSrc(options, 'register', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
-      this.callbacks['_successRegister'] = (data) => {
+      this.callbacks['_successRegister'] = (flags) => {
+        if (flags.verification !== undefined) verification = flags.verification
         this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
       }
     })
@@ -214,7 +215,8 @@ class Login extends AuthCoreWidget {
   constructor (options) {
     super(options)
     this.buildWidgetSrc(options, 'signin', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
-      this.callbacks['_successRegister'] = (data) => {
+      this.callbacks['_successRegister'] = (flags) => {
+        if (flags.verification !== undefined) verification = flags.verification
         this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
       }
     })
