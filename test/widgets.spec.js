@@ -278,7 +278,7 @@ suite('widgets.js', function () {
     suite('Register widget', function () {
       test('should be able to have register widget with successRegister callback', function (done) {
         // Preparing
-        new AuthCoreWidgets.Register({
+        const register = new AuthCoreWidgets.Register({
           container: 'authcore-register-widget',
           root: 'http://0.0.0.0:1337'
         })
@@ -294,6 +294,7 @@ suite('widgets.js', function () {
         // Testing
         const iframe = document.getElementById('authcore-register-widget').getElementsByTagName('iframe')[0]
         assert.exists(iframe)
+        assert.typeOf(register.callbacks['_successRegister'], 'function')
 
         window.postMessage({
           type: 'AuthCore_successRegister',
@@ -347,11 +348,18 @@ suite('widgets.js', function () {
     })
 
     suite('Login widget', function () {
-      test('should be able to mount an iframe with additional attributes', async function () {
+      test('should be able to have login widget with successRegister callback', function (done) {
         // Preparing
-        new AuthCoreWidgets.Login({
+        const login = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
           root: 'http://0.0.0.0:1337'
+        })
+        window.addEventListener('message', e => {
+          const { type, data } = e.data
+          if (type === 'AuthCore_successRegister') {
+            assert.deepEqual(data.accessToken, 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw')
+            done()
+          }
         })
 
         // Testing
@@ -359,6 +367,14 @@ suite('widgets.js', function () {
         assert.exists(iframe)
 
         assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
+        assert.typeOf(login.callbacks['_successRegister'], 'function')
+
+        window.postMessage({
+          type: 'AuthCore_successRegister',
+          data: {
+            accessToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NDQxODIxMzcsImlhdCI6MTU0NDE4MDMzNywiaXNzIjoiYXBpLmF1dGhjb3JlLmlvIiwic2lkIjoiMSIsInN1YiI6IjEifQ.UsEahH_9G1BrAooP-MQP8s7BKfXowq2LwjUeiVXH7coMdMbDV8VAQ_ygOz3I2zQyZ5PFzdlwHCzahncawU9Mpw'
+          }
+        }, '*')
       })
 
       test('should be able to call customised callback when `AuthCore_onSuccess` is message is posted', function (done) {
