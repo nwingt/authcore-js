@@ -1,3 +1,5 @@
+const  _ = require('lodash')
+
 const crypto = require('crypto')
 const color = require('color')
 const formatBuffer = require('./utils/formatBuffer')
@@ -25,11 +27,18 @@ function clearChildren (id) {
  * @param {object} options.primary The primary colour for the widget.
  * @param {object} options.success The success colour for the widget.
  * @param {object} options.danger The danger colour for the widget.
- * @param {object} options.callbacks The set of callback functions to-be called.
  * @param {string} options.root The hostname for Authcore widgets.
  * @param {boolean} [options.display=true] Boolean flag indicating if the widget is visible.
  * @param {boolean} [options.internal=false] Boolean flag indicating if the widget is internally
  *        used. If set to internal, the logo and the footer will not appear.
+ * @param {Function} options.onSuccess Callback function when the corresponding action has successfully completed.
+ * @param {Function} options.onLoaded Callback function when the widget page is loaded.
+ * @param {Function} options.unauthenticated Callback function when the widget returns unauthenticated status, most likely to occur due to expired access token.
+ * @param {Function} options.successRegister Callback function when the corresponding action has successfully completed.
+ * @param {Function} options.onCosmosSignApproved Callback function when the Cosmos signing is approved.
+ * @param {Function} options.onCosmosSignRejected Callback function when the Cosmos Signing is rejected.
+ * @param {Function} options.onTokenUpdated Callback function when the access token is updated successfully.
+ * @param {Function} options.onTokenUpdatedFail Callback function when the access token cannot be updated.
  */
 class AuthCoreWidget {
   constructor (options) {
@@ -37,7 +46,19 @@ class AuthCoreWidget {
       options.root = window.location.origin + '/widgets'
     }
 
-    const { container, callbacks, root, display = true } = options
+    const { container, root, display = true } = options
+    // Get default callback
+    const allowedCallbacks = [
+      'onSuccess',
+      'onLoaded',
+      'unauthenticated',
+      'successRegister',
+      'onCosmosSignApproved',
+      'onCosmosSignRejected',
+      'onTokenUpdated',
+      'onTokenUpdatedFail'
+    ]
+    const callbacks = _.pick(options, allowedCallbacks)
 
     this.root = root
     this.containerId = formatBuffer.toHex(crypto.randomBytes(8))
@@ -67,7 +88,7 @@ class AuthCoreWidget {
     this.container = container
 
     this.widget = widget
-    this.callbacks = callbacks || {}
+    this.callbacks = callbacks
 
     this.callbacks['_updateHeight'] = data => {
       this.widget.style.height = `${data.height}px`
@@ -293,7 +314,7 @@ class EthereumSignApproval extends AuthCoreWidget {
 
 /**
  * The Cosmos sign approval widget.
- * 
+ *
  * @augments AuthCoreWidget
  */
 class CosmosSignApproval extends AuthCoreWidget {

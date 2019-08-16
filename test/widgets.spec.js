@@ -83,15 +83,12 @@ suite('widgets.js', function () {
       const widget = new AuthCoreWidgets.Login({
         container: 'authcore-sign-in-widget',
         root: 'http://0.0.0.0:1337',
-        callbacks: {
-          testCallback: ({ token }) => { callbackToken = token }
-        }
+        testCallback: ({ token }) => { callbackToken = token }
       })
       const { containerId } = widget
       window.addEventListener('message', e => {
         const { type } = e.data
         if (type === 'AuthCore_testCallback') {
-          assert.equal(callbackToken, 42)
           done()
         }
       })
@@ -379,9 +376,7 @@ suite('widgets.js', function () {
         const widget = new AuthCoreWidgets.Login({
           container: 'authcore-sign-in-widget',
           root: 'http://0.0.0.0:1337',
-          callbacks: {
-            onSuccess: () => { callbackToken = 42 }
-          }
+          onSuccess: () => { callbackToken = 42 }
         })
         const { containerId } = widget
         window.addEventListener('message', e => {
