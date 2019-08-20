@@ -38,6 +38,7 @@ function AuthCoreWalletSubprovider (config) {
    * 
    * @memberof AuthCoreWalletSubprovider
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function getAccounts (cb) {
     let error = null, res
@@ -97,6 +98,7 @@ function AuthCoreWalletSubprovider (config) {
    * @memberof AuthCoreWalletSubprovider
    * @param {object} txObject The transaction object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signTransaction (txObject, cb) {
     let error = null, res
@@ -137,6 +139,7 @@ function AuthCoreWalletSubprovider (config) {
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signMessage (msgObject, cb) {
     let error = null, res
@@ -161,6 +164,7 @@ function AuthCoreWalletSubprovider (config) {
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signPersonalMessage (msgObject, cb) {
     let error = null, res
@@ -185,6 +189,7 @@ function AuthCoreWalletSubprovider (config) {
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signTypedMessage (msgObject, cb) {
     let error = null, res

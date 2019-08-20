@@ -16,6 +16,7 @@ const unicodeNorm = require('../utils/unicodeNorm.js')
  * @param {Function} config.callbacks.unauthenticated The callback function when a user is
  *        unauthenticated.
  * @param {string} config.accessToken The access token of the user.
+ * @returns {Promise<AuthCoreManagementClient>} The management client.
  * @example
  * const mgmtClient = await new AuthCoreManagementClient({
  *   apiBaseURL: 'https://auth.example.com',
@@ -44,6 +45,7 @@ class AuthCoreManagementClient {
    * 
    * @public
    * @param {string} accessToken The access token of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async setAccessToken (accessToken) {
     this.config.accessToken = accessToken
@@ -68,7 +70,7 @@ class AuthCoreManagementClient {
    * @param {number} pageSize The number of users per page.
    * @param {string} pageToken The page token.
    * @param {boolean} ascending Boolean flag indicating the order of the users.
-   * @returns {object} The list of users.
+   * @returns {Promise<object>} The list of users.
    */
   async listUsers (pageSize, pageToken, ascending) {
     const { ManagementService } = this
@@ -86,7 +88,7 @@ class AuthCoreManagementClient {
    * Gets a user.
    *
    * @param {string} userId The ID of the user.
-   * @returns {object} The user with given ID.
+   * @returns {Promise<object>} The user with given ID.
    */
   async getUser (userId) {
     const { ManagementService } = this
@@ -103,7 +105,7 @@ class AuthCoreManagementClient {
    *
    * @param {string} userId The ID of the user.
    * @param {object} userObject The purposed update for the user.
-   * @returns {object} The updated user.
+   * @returns {Promise<object>} The updated user.
    */
   async updateUserProfile (userId, userObject) {
     const { ManagementService } = this
@@ -125,7 +127,7 @@ class AuthCoreManagementClient {
    * @param {boolean} locked Boolean flag indicating if the user will be locked.
    * @param {number} lockInDays The number of days locked.
    * @param {string} description A description for the lock (or unlock).
-   * @returns {object} The updated user.
+   * @returns {Promise<object>} The updated user.
    */
   async updateUserLock (userId, locked, lockInDays, description) {
     const { ManagementService } = this
@@ -161,6 +163,7 @@ class AuthCoreManagementClient {
    *
    * @param {string} userId The ID of the user.
    * @param {string} email The e-mail address to be created as a contact.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async createEmailContact (userId, email) {
     const { ManagementService } = this
@@ -187,6 +190,7 @@ class AuthCoreManagementClient {
    *
    * @param {string} userId The ID of the user.
    * @param {string} phone The phone number to be created as a contact.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async createPhoneContact (userId, phone) {
     const { ManagementService } = this
@@ -213,7 +217,7 @@ class AuthCoreManagementClient {
    *
    * @param {string} userId The user ID.
    * @param {string} type The type of contacts, either `phone` or `email`. (Optional).
-   * @returns {object[]} The list of contacts.
+   * @returns {Promise<object[]>} The list of contacts.
    */
   async listContacts (userId, type) {
     const { ManagementService } = this
@@ -230,7 +234,7 @@ class AuthCoreManagementClient {
    * Changes the primary contact of a user.
    *
    * @param {string} contactId The ID of the new primary contact.
-   * @returns {object} The primary contact object.
+   * @returns {Promise<object>} The primary contact object.
    */
   async updatePrimaryContact (contactId) {
     const { ManagementService } = this
@@ -245,7 +249,8 @@ class AuthCoreManagementClient {
   /**
    * Deletes a contact.
    *
-   * @param {number} contactId The ID of the contact to-be deleted..
+   * @param {number} contactId The ID of the contact to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteContact (contactId) {
     const { ManagementService } = this
@@ -259,6 +264,7 @@ class AuthCoreManagementClient {
    * Starts to verify an owned contact by requesting a verification email / SMS.
    *
    * @param {string} contactId The ID of the contact to-be verified.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async startVerifyContact (contactId) {
     const { ManagementService } = this
@@ -271,7 +277,7 @@ class AuthCoreManagementClient {
    * Lists the second factors for a user.
    *
    * @param {string} id The user ID.
-   * @returns {object[]} The list of second factors.
+   * @returns {Promise<object[]>} The list of second factors.
    */
   async listSecondFactors (id) {
     const { ManagementService } = this
@@ -289,7 +295,7 @@ class AuthCoreManagementClient {
    * @param {number} pageSize The number of audit logs per page.
    * @param {string} pageToken The page token.
    * @param {boolean} ascending Boolean flag indicating the order of the audit logs.
-   * @returns {object} The list of audit logs.
+   * @returns {Promise<object>} The list of audit logs.
    */
   async listAuditLogs (pageSize, pageToken, ascending) {
     const { ManagementService } = this
@@ -310,7 +316,7 @@ class AuthCoreManagementClient {
    * @param {number} pageSize The number of audit logs per page.
    * @param {string} pageToken The page token.
    * @param {boolean} ascending Boolean flag indicating the order of the audit logs.
-   * @returns {object} The list of audit logs.
+   * @returns {Promise<object>} The list of audit logs.
    */
   async listUserAuditLogs (userId, pageSize, pageToken, ascending) {
     const { ManagementService } = this
@@ -328,7 +334,7 @@ class AuthCoreManagementClient {
   /**
    * List the roles.
    *
-   * @returns {object[]} The list of roles.
+   * @returns {Promise<object[]>} The list of roles.
    */
   async listRoles () {
     const { ManagementService } = this
@@ -342,7 +348,7 @@ class AuthCoreManagementClient {
    * Creates a new role.
    * 
    * @param {string} name The name of the role.
-   * @returns {object} The role object.
+   * @returns {Promise<object>} The role object.
    */
   async createRole (name) {
     const { ManagementService } = this
@@ -360,6 +366,7 @@ class AuthCoreManagementClient {
    * Deletes a role.
    * 
    * @param {string} roleId The ID of the role to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteRole (roleId) {
     const { ManagementService } = this
@@ -373,6 +380,7 @@ class AuthCoreManagementClient {
    * 
    * @param {string} userId The user ID.
    * @param {string} roleId The role ID.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async assignRole (userId, roleId) {
     const { ManagementService } = this
@@ -389,6 +397,7 @@ class AuthCoreManagementClient {
    * 
    * @param {string} userId The user ID.
    * @param {string} roleId The role ID.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async unassignRole (userId, roleId) {
     const { ManagementService } = this
@@ -402,7 +411,7 @@ class AuthCoreManagementClient {
    * Lists the roles of a user.
    *
    * @param {string} userId The user ID.
-   * @returns {object[]} The list of roles.
+   * @returns {Promise<object[]>} The list of roles.
    */
   async listRoleAssignments (userId) {
     const { ManagementService } = this
@@ -418,7 +427,7 @@ class AuthCoreManagementClient {
    * Lists of permissions for a role.
    *
    * @param {string} roleId The role ID.
-   * @returns {object[]} The list of permissions.
+   * @returns {Promise<object[]>} The list of permissions.
    */
   async listPermissionAssignments (roleId) {
     const { ManagementService } = this
@@ -433,7 +442,7 @@ class AuthCoreManagementClient {
   /**
    * Lists the permissions of the current user.
    *
-   * @returns {object[]} The list of permissions.
+   * @returns {Promise<object[]>} The list of permissions.
    */
   async listCurrentUserPermissions () {
     const { ManagementService } = this
@@ -451,6 +460,7 @@ class AuthCoreManagementClient {
    * @param {string} email The purposed email address of the user.
    * @param {string} phone The purposed phone number of the user.
    * @param {string} displayName The purposed display name of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async createUser (username, password, email, phone, displayName) {
     const { ManagementService } = this
@@ -491,6 +501,7 @@ class AuthCoreManagementClient {
    *
    * @param {string} userId The user ID.
    * @param {string} newPassword The purposed new password.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async changePassword (userId, newPassword) {
     const { ManagementService } = this
@@ -521,7 +532,7 @@ class AuthCoreManagementClient {
    * @param {number} pageSize The number of sessions per page.
    * @param {string} pageToken The page token.
    * @param {boolean} ascending Boolean flag indicating the order of the sessions.
-   * @returns {object[]} The list of sessions.
+   * @returns {Promise<object[]>} The list of sessions.
    */
   async listSessions (userId, pageSize, pageToken, ascending) {
     const { ManagementService } = this
@@ -540,6 +551,7 @@ class AuthCoreManagementClient {
    * Deletes a session.
    *
    * @param {number} sessionId The session ID to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteSession (sessionId) {
     const { ManagementService } = this
@@ -552,7 +564,7 @@ class AuthCoreManagementClient {
    * Gets the metadata of a user.
    *
    * @param {number} userId The user ID.
-   * @returns {string} The metadata of the user.
+   * @returns {Promise<object>} The metadata of the user.
    */
   async getMetadata (userId) {
     const { ManagementService } = this
@@ -573,7 +585,7 @@ class AuthCoreManagementClient {
    * @param {number} userId The user ID.
    * @param {string} userMetadata The purposed user metadata.
    * @param {string} appMetadata The purposed app metadata.
-   * @returns {object} The updated metadata.
+   * @returns {Promise<object>} The updated metadata.
    */
   async updateMetadata (userId, userMetadata, appMetadata) {
     const { ManagementService } = this
@@ -596,6 +608,7 @@ class AuthCoreManagementClient {
    * to run callbacks from client implementation.
    *
    * @private
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async _getSwaggerClient () {
     let authorizations

@@ -12,7 +12,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
  * @private
  * @param {string} username The username of a user.
  * @param {string} password The password of a user.
- * @returns {object} A SRP verifier for the username-password pair.
+ * @returns {Promise<object>} A SRP verifier for the username-password pair.
  * @property {string} salt The salt used as a hash for the password.
  * @property {string} verifier The password verifier defined by the SRP protocol.
  */
@@ -45,8 +45,8 @@ function createVerifier (username, password) {
  * @param {string} password The password of a user.
  * @param {Buffer} salt The salt used as a hash for the password.
  * @param {Buffer} B The one-time ephemeral key of the server.
- * @returns {object} The SRP response for the username-password pair, under the corresponding
- *          challenge.
+ * @returns {Promise<object>} The SRP response for the username-password pair, under the
+ *          corresponding challenge.
  * @property {string} A The one-time ephemeral key of the client.
  * @property {string} M1 The proof defined by the SRP protocol.
  */

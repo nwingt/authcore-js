@@ -37,7 +37,7 @@ class AuthCoreCosmosProvider {
    * Lists the wallets.
    * 
    * @private
-   * @returns {string[]} The list of wallets.
+   * @returns {Promise<string[]>} The list of wallets.
    */
   async _getWallets () {
     if (this.wallets.length > 0) return this.wallets
@@ -65,8 +65,8 @@ class AuthCoreCosmosProvider {
 
   /**
    * Lists the owned addresses.
-   * 
-   * @returns {string[]} The list of owned accounts.
+   *
+   * @returns {Promise<string[]>} The list of owned accounts.
    */
   async getAddresses () {
     const wallets = await this._getWallets()
@@ -77,7 +77,7 @@ class AuthCoreCosmosProvider {
   /**
    * Lists the owned public keys.
    * 
-   * @returns {string[]} The list of owned public keys.
+   * @returns {Promise<string[]>} The list of owned public keys.
    */
   async getPublicKeys () {
     const wallets = await this._getWallets()
@@ -97,7 +97,7 @@ class AuthCoreCosmosProvider {
    * @param {string} data.sequence The nonce for the wallet.
    * @param {object[]} data.signatures The signatures.
    * @param {string} address The address of that wallet that is used to sign the message. Must be one of the owned addresses.
-   * @returns {object} The signed payload that is ready to be broadcasted.
+   * @returns {Promise<object>} The signed payload that is ready to be broadcasted.
    */
   async approve (data, address) {
     const { authcoreClient, authcoreWidgetsUrl, container } = this
@@ -127,7 +127,7 @@ class AuthCoreCosmosProvider {
    * @param {string} data.sequence The nonce for the wallet.
    * @param {object[]} data.signatures The signatures.
    * @param {string} address The address of that wallet that is used to sign the message. Must be one of the owned addresses.
-   * @returns {object} The signed payload that is ready to be broadcasted.
+   * @returns {Promise<object>} The signed payload that is ready to be broadcasted.
    */
   async sign (data, address) {
     const { authcoreClient, pathPrefix } = this

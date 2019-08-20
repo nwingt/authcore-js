@@ -24,9 +24,9 @@ function clearChildren (id) {
  * @param {string} options.container The ID of the DOM element that injects the widget.
  * @param {string} options.company The company name used for the widget.
  * @param {string} options.logo The URL for the logo used for the widget.
- * @param {object} options.primary The primary colour for the widget.
- * @param {object} options.success The success colour for the widget.
- * @param {object} options.danger The danger colour for the widget.
+ * @param {object} options.primaryColour The primary colour for the widget.
+ * @param {object} options.successColour The success colour for the widget.
+ * @param {object} options.dangerColour The danger colour for the widget.
  * @param {string} options.root The hostname for Authcore widgets.
  * @param {boolean} [options.display=true] Boolean flag indicating if the widget is visible.
  * @param {boolean} [options.internal=false] Boolean flag indicating if the widget is internally
@@ -39,6 +39,7 @@ function clearChildren (id) {
  * @param {Function} options.onCosmosSignRejected Callback function when the Cosmos Signing is rejected.
  * @param {Function} options.onTokenUpdated Callback function when the access token is updated successfully.
  * @param {Function} options.onTokenUpdatedFail Callback function when the access token cannot be updated.
+ * @returns {AuthCoreWidget} The widget.
  */
 class AuthCoreWidget {
   constructor (options) {
