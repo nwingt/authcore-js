@@ -17,6 +17,7 @@ const unicodeNorm = require('../utils/unicodeNorm.js')
  * @param {Function} config.callbacks.unauthenticated The callback function when a user is
  *        unauthenticated.
  * @param {string} config.accessToken The access token of the user.
+ * @returns {Promise<AuthCoreAuthClient>} The AuthClient.
  * @example
  * const authClient = await new AuthCoreAuthClient({
  *   apiBaseURL: 'https://auth.example.com',
@@ -50,6 +51,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} accessToken The access token of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async setAccessToken (accessToken) {
     this.config.accessToken = accessToken
@@ -72,7 +74,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} handle A handle of a user. Could be username, email address or phone number.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async startAuthentication (handle) {
     const { AuthService } = this
@@ -96,7 +98,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} password The password of the user.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async authenticateWithSRP (password) {
     const { AuthService, handle, passwordChallenge, temporaryToken } = this
@@ -133,7 +135,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} pin The PIN received in the authenticator device of the user.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async authenticateWithTOTP (pin) {
     const { AuthService, temporaryToken } = this
@@ -155,6 +157,7 @@ class AuthCoreAuthClient {
    * Requests a SMS for the second-factor authentication using SMS.
    * 
    * @public
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async startAuthenticateSMS () {
     const { AuthService, temporaryToken } = this
@@ -171,7 +174,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} code The SMS code received by the authenticating phone number of the user.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async authenticateWithSMS (code) {
     const { AuthService, temporaryToken } = this
@@ -194,7 +197,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} code The backup code of the user.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async authenticateWithBackupCode (code) {
     const { AuthService, temporaryToken } = this
@@ -218,7 +221,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {string} authorizationToken A one-use token that is used to generate refresh token and
    *        access token.
-   * @returns {AccessToken} The access token.
+   * @returns {Promise<AccessToken>} The access token.
    */
   async createAccessToken (authorizationToken) {
     const { AuthService } = this
@@ -240,7 +243,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} refreshToken A token that can be repeatedly generate access tokens.
-   * @returns {AccessToken} The access token.
+   * @returns {Promise<AccessToken>} The access token.
    */
   async createAccessTokenByRefreshToken (refreshToken) {
     const { AuthService } = this
@@ -261,7 +264,7 @@ class AuthCoreAuthClient {
    * Get the current user.
    *
    * @public
-   * @returns {object} The current user.
+   * @returns {Promise<object>} The current user.
    */
   async getCurrentUser () {
     const { AuthService } = this
@@ -277,7 +280,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {object} user The purposed update for the current user.
-   * @returns {object} The updated current user.
+   * @returns {Promise<object>} The updated current user.
    */
   async updateCurrentUser (user) {
     const { AuthService } = this
@@ -301,7 +304,7 @@ class AuthCoreAuthClient {
    * @param {string} user.email The purposed email address of the user.
    * @param {string} user.password The purposed password of the user.
    * @param {string} user.displayName The purposed display name of the user.
-   * @returns {AccessToken} The access token.
+   * @returns {Promise<AccessToken>} The access token.
    */
   async createUser (user) {
     const { username = '', phone = '', email = '', password } = user
@@ -368,7 +371,7 @@ class AuthCoreAuthClient {
    * @param {object} oauth The OAuth object.
    * @param {string} oauth.accessToken The access token for OAuth.
    * @param {string} oauth.service The service for OAuth.
-   * @returns {AccessToken} The access token.
+   * @returns {Promise<AccessToken>} The access token.
    */
   async createUserByOAuth (user, oauth) {
     const { username = '', phone = '', email = '' } = user
@@ -429,6 +432,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {string} oldPassword The old password of the user.
    * @param {string} newPassword The purposed new password of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async changePassword (oldPassword, newPassword) {
     const { AuthService } = this
@@ -474,7 +478,7 @@ class AuthCoreAuthClient {
    * Lists the owned second factors.
    *
    * @public
-   * @returns {object[]} The list of second factors.
+   * @returns {Promise<object[]>} The list of second factors.
    */
   async listSecondFactors () {
     const { AuthService } = this
@@ -500,7 +504,7 @@ class AuthCoreAuthClient {
    * @param {string} identifier The identifier of the TOTP authenticator.
    * @param {string} totpSecret The secret for the TOTP authenticator.
    * @param {string} totpPin The PIN received in the authenticator device of the user.
-   * @returns {object} The second factor object.
+   * @returns {Promise<object>} The second factor object.
    */
   async createTOTPAuthenticator (identifier, totpSecret, totpPin) {
     const { AuthService } = this
@@ -523,6 +527,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} phoneNumber The phone number for the SMS authentication.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async startCreateSMSSecondFactor (phoneNumber) {
     const { AuthService } = this
@@ -542,7 +547,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {string} phoneNumber The phone number for the SMS authentication.
    * @param {string} smsCode The sms code for verifying the authentication setting.
-   * @returns {object} The second factor object.
+   * @returns {Promise<object>} The second factor object.
    */
   async createSMSSecondFactor (phoneNumber, smsCode) {
     const { AuthService } = this
@@ -563,7 +568,7 @@ class AuthCoreAuthClient {
    * Creates a backup code as a second factor for the current user.
    *
    * @public
-   * @returns {object} The second factor object.
+   * @returns {Promise<object>} The second factor object.
    */
   async createBackupCode () {
     const { AuthService } = this
@@ -583,6 +588,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {number} id The ID of the second factor to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteSecondFactor (id) {
     const { AuthService } = this
@@ -596,7 +602,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} email The e-mail address to be created as a contact.
-   * @returns {object} The newly created email id and value.
+   * @returns {Promise<object>} The newly created email id and value.
    */
   async createEmailContact (email) {
     const { AuthService } = this
@@ -622,7 +628,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} phone The phone number to be created as a contact.
-   * @returns {object} The newly created phone id and value.
+   * @returns {Promise<object>} The newly created phone id and value.
    */
   async createPhoneContact (phone) {
     const { AuthService } = this
@@ -648,7 +654,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} [type] The type of contacts, either `phone` or `email`.
-   * @returns {object[]} The list of contacts.
+   * @returns {Promise<object[]>} The list of contacts.
    */
   async listContacts (type) {
     const { AuthService } = this
@@ -664,6 +670,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {number} contactId The ID of the contact to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteContact (contactId) {
     const { AuthService } = this
@@ -677,6 +684,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} contactId The ID of the contact to-be verified.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async startVerifyContact (contactId) {
     const { AuthService } = this
@@ -692,7 +700,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} contactId The ID of the new primary contact.
-   * @returns {object} The primary contact object.
+   * @returns {Promise<object>} The primary contact object.
    */
   async updatePrimaryContact (contactId) {
     const { AuthService } = this
@@ -709,6 +717,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} token The verification token.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async verifyContactByToken (token) {
     const { AuthService } = this
@@ -725,6 +734,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {number} contactId The ID of the contact to-be verified.
    * @param {string} code The verification code.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async verifyContactByCode (contactId, code) {
     const { AuthService } = this
@@ -745,7 +755,7 @@ class AuthCoreAuthClient {
    * @param {number} pageSize The number of sessions per page.
    * @param {string} pageToken The page token.
    * @param {boolean} ascending Boolean flag indicating the order of the sessions.
-   * @returns {object} The list of sessions.
+   * @returns {Promise<object>} The list of sessions.
    */
   async listSessions (pageSize, pageToken, ascending) {
     const { AuthService } = this
@@ -763,6 +773,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {number} sessionId The ID of the session to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteSession (sessionId) {
     const { AuthService } = this
@@ -775,7 +786,7 @@ class AuthCoreAuthClient {
    * Gets the metadata for the current user.
    *
    * @public
-   * @returns {Metadata} The metadata object.
+   * @returns {Promise<Metadata>} The metadata object.
    */
   async getMetadata () {
     const { AuthService } = this
@@ -792,7 +803,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} userMetadata The user metadata to-be.
-   * @returns {Metadata} The metadata object.
+   * @returns {Promise<Metadata>} The metadata object.
    */
   async updateMetadata (userMetadata) {
     const { AuthService } = this
@@ -821,6 +832,7 @@ class AuthCoreAuthClient {
    * @param {string} scope The scope of the access request.
    * @param {string} state An opaque value used by the client to maintain the state between the
    *        request and callback.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async validateOAuthParameters (responseType, clientId, redirectUri, scope, state) {
     const { AuthService } = this
@@ -840,7 +852,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {string} handle A handle of the user. Should either be a email address or a phone
    *        number.
-   * @returns {object} The authentication state for reset password.
+   * @returns {Promise<object>} The authentication state for reset password.
    */
   async startResetPasswordAuthentication (handle) {
     const { AuthService } = this
@@ -864,7 +876,7 @@ class AuthCoreAuthClient {
    * 
    * @public
    * @param {string} token The contact token for reset password.
-   * @returns {object} The authentication state for reset password.
+   * @returns {Promise<object>} The authentication state for reset password.
    */
   async authenticateResetPasswordWithContact (token) {
     const { AuthService, temporaryToken } = this
@@ -889,6 +901,7 @@ class AuthCoreAuthClient {
    * @public
    * @param {string} resetPasswordToken An one-use token that is used to reset password.
    * @param {string} newPassword The new password of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async resetPassword (resetPasswordToken, newPassword) {
     const { AuthService } = this
@@ -919,7 +932,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} service The external OAuth service used.
-   * @returns {string} The URI of the OAuth endpoint.
+   * @returns {Promise<string>} The URI of the OAuth endpoint.
    */
   async startAuthenticateOAuth (service) {
     const { AuthService } = this
@@ -941,7 +954,7 @@ class AuthCoreAuthClient {
    * @param {string} state An opaque value used by the client to maintain the state between the
    *        request and callback.
    * @param {string} code The authorization code returned by the external OAuth service.
-   * @returns {object} An object consisting of `authentication_state`, `create_account` and
+   * @returns {Promise<object>} An object consisting of `authentication_state`, `create_account` and
    *          `preferred_email`.
    */
   async authenticateOAuth (service, state, code) {
@@ -967,7 +980,7 @@ class AuthCoreAuthClient {
    * Lists the owned OAuth factors.
    *
    * @public
-   * @returns {object[]} The list of OAuth factors.
+   * @returns {Promise<object[]>} The list of OAuth factors.
    */
   async listOAuthFactors () {
     const { AuthService } = this
@@ -982,7 +995,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {string} service The external OAuth service used.
-   * @returns {string} The URI of the OAuth endpoint.
+   * @returns {Promise<string>} The URI of the OAuth endpoint.
    */
   async startCreateOAuthFactor (service) {
     const { AuthService } = this
@@ -1003,7 +1016,7 @@ class AuthCoreAuthClient {
    * @param {string} state An opaque value used by the client to maintain the state between the
    *        request and callback.
    * @param {string} code The authorization code returned by the external OAuth service.
-   * @returns {AuthenticationState} The authentication state.
+   * @returns {Promise<AuthenticationState>} The authentication state.
    */
   async createOAuthFactor (service, state, code) {
     const { AuthService } = this
@@ -1024,6 +1037,7 @@ class AuthCoreAuthClient {
    *
    * @public
    * @param {number} id The ID of the OAuth factor to-be deleted.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async deleteOAuthFactor (id) {
     const { AuthService } = this
@@ -1036,6 +1050,7 @@ class AuthCoreAuthClient {
    * Signs out from the current session.
    * 
    * @public
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async signOut () {
     const { AuthService } = this
@@ -1047,6 +1062,7 @@ class AuthCoreAuthClient {
    * callbacks from client implementation.
    *
    * @private
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async _getSwaggerClient () {
     let authorizations

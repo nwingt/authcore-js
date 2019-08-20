@@ -13,6 +13,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
  * @param {Function} config.callbacks.unauthenticated The callback function when a user is
  *        unauthenticated.
  * @param {string} config.accessToken The access token of the user.
+ * @returns {Promise<AuthCoreKeyVaultClient>} The key vault client.
  * @example
  * const mgmtClient = await new AuthCoreKeyVaultClient({
  *   apiBaseURL: 'https://auth.example.com',
@@ -41,6 +42,7 @@ class AuthCoreKeyVaultClient {
    * 
    * @public
    * @param {string} accessToken The access token of the user.
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async setAccessToken (accessToken) {
     this.config.accessToken = accessToken
@@ -62,7 +64,7 @@ class AuthCoreKeyVaultClient {
    *
    * @param {string} type The type of the secret.
    * @param {number} size The size (in bytes) of the secret.
-   * @returns {object} The secret object. Contains only the secret id.
+   * @returns {Promise<object>} The secret object. Contains only the secret id.
    */
   async createSecret (type, size) {
     const { KeyVaultService } = this
@@ -85,7 +87,7 @@ class AuthCoreKeyVaultClient {
    * [BIP-0044](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
    * 
    * @param {string} pathPrefix The prefix of the derivation path.
-   * @returns {string[]} The HD child public keys.
+   * @returns {Promise<string[]>} The HD child public keys.
    */
   async listHDChildPublicKeys (pathPrefix) {
     const { KeyVaultService } = this
@@ -108,7 +110,7 @@ class AuthCoreKeyVaultClient {
    * @param {Buffer} data The payload to be signed.
    * @param {string} type The type of the payload (`transaction` / `message` / `personal_message` /
    *        `typed_message`).
-   * @returns {string} The signature of the given payload.
+   * @returns {Promise<string>} The signature of the given payload.
    */
   async ethereumSign (objectId, walletPath, data, type) {
     const { KeyVaultService } = this
@@ -132,7 +134,7 @@ class AuthCoreKeyVaultClient {
    * @param {string} objectId The object ID.
    * @param {string} walletPath The path of the wallet.
    * @param {string} data The payload to be signed.
-   * @returns {string} The signature of the given payload.
+   * @returns {Promise<string>} The signature of the given payload.
    */
   async cosmosSign (objectId, walletPath, data) {
     const { KeyVaultService } = this
@@ -154,6 +156,7 @@ class AuthCoreKeyVaultClient {
    * to run callbacks from client implementation.
    *
    * @private
+   * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async _getSwaggerClient () {
     let authorizations

@@ -15,9 +15,9 @@ const formatBuffer = require('../utils/formatBuffer.js')
  * @example
  * await scrypt(Buffer.from('password'), Buffer.from('NaCl'), 1024, 8, 16)
  * // returns <Buffer fd ba be 1c 9d 34 72 00 78 56 ...>
- * @returns {Buffer} The hash value.
+ * @returns {Promise<Buffer>} The hash value.
  */
-async function scrypt (passphrase, salt, n, r, p) {
+function scrypt (passphrase, salt, n, r, p) {
   return new Promise(function (resolve, reject) {
     scryptLib(passphrase, salt, n, r, p, 64, function (error, _, key) {
       /* istanbul ignore next */
