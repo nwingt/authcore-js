@@ -62,6 +62,7 @@ class AuthCoreWidget {
 
     this.root = root
     this.containerId = formatBuffer.toHex(crypto.randomBytes(8))
+    this.accessToken = options.accessToken
 
     const widget = document.createElement('iframe')
     widget.style.height = '0px'
@@ -100,7 +101,7 @@ class AuthCoreWidget {
       // Sends the access token to the widget
       this.widget.contentWindow.postMessage({
         type: 'AuthCore_accessToken',
-        data: options.accessToken
+        data: this.accessToken
       }, options.root)
     }
     this.callbacks['_unauthenticated'] = () => {
@@ -142,6 +143,7 @@ class AuthCoreWidget {
    * @param {string} accessToken The access token.
    **/
   updateAccessToken (accessToken) {
+    this.accessToken = accessToken
     this.widget.contentWindow.postMessage({
       type: 'AuthCore_accessToken',
       data: accessToken
