@@ -16,6 +16,7 @@ suite('widgets.js', function () {
           <body>
             <div id="authcore-register-widget"></div>
             <div id="authcore-sign-in-widget"></div>
+            <div id="authcore-profile-widget"></div>
             <div id="authcore-contacts-widget"></div>
             <div id="authcore-settings-widget"></div>
           </body>
@@ -155,6 +156,68 @@ suite('widgets.js', function () {
 
       assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
       assert.match(iframe.src, /internal=true/)
+    })
+
+    test('should be able to post access token to the widget using onLoaded callback', function (done) {
+      // Preparing
+      const widget = new AuthCoreWidgets.Profile({
+        container: 'authcore-profile-widget',
+        root: 'http://0.0.0.0:1337',
+        accessToken: 'accessToken'
+      })
+      const { containerId } = widget
+
+      window.addEventListener('message', e => {
+        const { type, data } = e.data
+        assert.equal(type, 'AuthCore__onLoaded')
+      })
+
+      // Check accessToken callback in widget, which is triggered by onLoaded message posted inside the widget.
+      const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+      iframe.contentWindow.addEventListener('message', e => {
+        const { type, data } = e.data
+        if (type === 'AuthCore_accessToken') {
+          // Testing
+          assert.equal(data, 'accessToken')
+          done()
+        }
+      })
+
+      // Testing
+      assert.equal(widget.accessToken, 'accessToken')
+
+      window.postMessage({
+        type: 'AuthCore__onLoaded',
+        data: {
+          containerId
+        }
+      }, '*')
+    })
+
+    test('should be able to post new access token to the widget', function (done) {
+      // Preparing
+      const widget = new AuthCoreWidgets.Profile({
+        container: 'authcore-profile-widget',
+        root: 'http://0.0.0.0:1337',
+        accessToken: 'oldAccessToken'
+      })
+
+      // Check accessToken callback in widget, which is triggered by updateAccessToken function from widget instance.
+      const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+      iframe.contentWindow.addEventListener('message', e => {
+        const { type, data } = e.data
+        if (type === 'AuthCore_accessToken') {
+          // Testing
+          assert.equal(data, 'newAccessToken')
+          done()
+        }
+      })
+
+      // Testing
+      assert.equal(widget.accessToken, 'oldAccessToken')
+      // Update to new access token
+      widget.updateAccessToken('newAccessToken')
+      assert.equal(widget.accessToken, 'newAccessToken')
     })
 
     suite('Colour parameters setting for widget', function () {
