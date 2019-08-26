@@ -47,6 +47,16 @@ suite('widgets.js', function () {
       const iframe = iframes[0]
       assert.equal(iframe.style.width, '100%')
       assert.equal(iframe.style.overflow, 'hidden')
+
+      const svg = document.getElementById('authcore-sign-in-widget').getElementsByTagName('svg')[0]
+      assert.equal(svg.style.opacity, '0')
+      assert.equal(svg.getAttribute('class'), 'rotate')
+      assert.match(svg.style.transition, /opacity/)
+
+      const path = svg.getElementsByTagName('path')[0]
+      assert.equal(path.getAttribute('fill'), 'none')
+      assert.equal(path.getAttribute('stroke-linecap'), 'round')
+      assert.equal(path.getAttribute('stroke-width'), 3)
     })
 
     test('should be able to update height when `AuthCore__updateHeight` message is posted', function (done) {
