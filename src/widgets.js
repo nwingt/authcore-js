@@ -65,12 +65,37 @@ class AuthCoreWidget {
     this.containerId = formatBuffer.toHex(crypto.randomBytes(8))
     this.accessToken = options.accessToken
 
+    // Set transition time in milliseconds
+    const transitionTime = 400
+
     const widget = document.createElement('iframe')
     widget.style.height = '0px'
     widget.style.width = '100%'
     widget.style.overflow = 'hidden'
     widget.style.border = '0'
     widget.scrolling = 'no'
+    // Set animation for hide and show behaviour
+    widget.style['transition'] = `opacity ${transitionTime}ms ease`
+    // Hide the widget at the beginning
+    widget.style['opacity'] = 0
+
+    // SVG information refers to Load.svg in authcore-widgets
+    let path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttributeNS(null, 'd', 'M31.5,0A31.473,31.473,0,1,0,43.467,2.353')
+    path.setAttributeNS(null, 'transform', 'translate(1.5 1.5)')
+    path.setAttributeNS(null, 'fill', 'none')
+    // TODO: Set to be fixed at this moment, should be customizable when the loading spinner in widgets is also customizable, see https://gitlab.com/blocksq/authcore/issues/312
+    path.setAttributeNS(null, 'stroke', '#1100fa')
+    path.setAttributeNS(null, 'stroke-linecap', 'round')
+    path.setAttributeNS(null, 'stroke-width', 3)
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttributeNS(null, 'class', 'rotate')
+    svg.setAttributeNS(null, 'width', 66)
+    svg.setAttributeNS(null, 'height', 66)
+    svg.style['opacity'] = 0
+    svg.style['transition'] = `opacity ${transitionTime}ms ease`
+    svg.appendChild(path)
 
     if (!display) {
       widget.id = this.containerId
@@ -83,7 +108,13 @@ class AuthCoreWidget {
       const containerElement = document.getElementById(container)
       // Provide `overflow: auto` to ensure scroll behaviour, parent in client side should
       // also be set if necessary(Mainly case for modal dialog)
+      containerElement.className = 'text-center'
       containerElement.style['overflow'] = 'auto'
+      // Append the loading spinner and with transition time to show
+      containerElement.appendChild(svg)
+      setTimeout(() => {
+        svg.style['opacity'] = 1
+      }, transitionTime)
       containerElement.appendChild(widget)
     }
 
@@ -99,6 +130,13 @@ class AuthCoreWidget {
     }
     // Callback to be called from widget component to notify the widget is loaded
     this.callbacks['_onLoaded'] = () => {
+      // Set to hide the loading spinner
+      svg.style['opacity'] = 0
+      setTimeout(() => {
+        // Show the widget instance and remove loading spinner
+        widget.style['opacity'] = 1
+        svg.remove()
+      }, transitionTime)
       // Sends the access token to the widget
       this.widget.contentWindow.postMessage({
         type: 'AuthCore_accessToken',
