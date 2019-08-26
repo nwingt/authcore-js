@@ -185,7 +185,8 @@ class AuthCoreWidget {
       successColour = undefined,
       dangerColour = undefined,
       internal = false,
-      verification = true
+      verification = true,
+      requireUsername = false
     } = options
 
     if (logo === undefined) {
@@ -202,10 +203,13 @@ class AuthCoreWidget {
     if (typeof verification !== 'boolean') {
       throw new Error('verification must be boolean')
     }
+    if (typeof requireUsername !== 'boolean') {
+      throw new Error('requireUsername must be boolean')
+    }
     primaryColour = this.buildColourCode(primaryColour)
     successColour = this.buildColourCode(successColour)
     dangerColour = this.buildColourCode(dangerColour)
-    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}`
+    this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&requireUsername=${requireUsername}`
     if (typeof extraSetting === 'function') {
       extraSetting({ logo, company, primaryColour, successColour, dangerColour, internal, verification })
     }

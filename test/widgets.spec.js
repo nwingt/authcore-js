@@ -220,6 +220,37 @@ suite('widgets.js', function () {
       assert.equal(widget.accessToken, 'newAccessToken')
     })
 
+    suite('requireUsername parameter setting for widget', function () {
+      test('should not require username by default', async function () {
+        // Preparing
+        new AuthCoreWidgets.Register({
+          container: 'authcore-register-widget',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-register-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /requireUsername=false/)
+      })
+
+      test('should all to require username', async function () {
+        // Preparing
+        new AuthCoreWidgets.Register({
+          container: 'authcore-register-widget',
+          root: 'http://0.0.0.0:1337',
+          requireUsername: true
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-register-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /requireUsername=true/)
+      })
+    })
+
     suite('Colour parameters setting for widget', function () {
       test('should be able to set primary colour for widget', async function () {
         // Preparing
