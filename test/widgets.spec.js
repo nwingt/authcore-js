@@ -168,6 +168,22 @@ suite('widgets.js', function () {
       assert.match(iframe.src, /internal=true/)
     })
 
+    test('should be able to set language flag for widget', async function () {
+      // Preparing
+      const widget = new AuthCoreWidgets.Login({
+        container: 'authcore-sign-in-widget',
+        root: 'http://0.0.0.0:1337',
+        language: 'zh-hk'
+      })
+
+      // Testing
+      const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
+      assert.exists(iframe)
+
+      assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
+      assert.match(iframe.src, /language=zh-hk/)
+    })
+
     test('should be able to post access token to the widget using onLoaded callback', function (done) {
       // Preparing
       const widget = new AuthCoreWidgets.Profile({
