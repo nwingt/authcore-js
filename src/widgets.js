@@ -43,6 +43,12 @@ function clearChildren (id) {
  */
 class AuthCoreWidget {
   constructor (options) {
+    // Provide keyframes animation in widgets
+    let animationStyle = document.createElement('style')
+    animationStyle.type = 'text/css'
+    document.head.appendChild(animationStyle)
+    animationStyle.sheet.insertRule(`@keyframes --widgets-spin { 100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); } }`, animationStyle.length)
+
     if (!options.root) {
       options.root = window.location.origin + '/widgets'
     }
@@ -90,9 +96,10 @@ class AuthCoreWidget {
     path.setAttributeNS(null, 'stroke-width', 3)
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    svg.setAttributeNS(null, 'class', 'rotate')
     svg.setAttributeNS(null, 'width', 66)
     svg.setAttributeNS(null, 'height', 66)
+    svg.style['animation'] = `--widgets-spin 1.5s cubic-bezier(0, 0.6, 0.36, 1) infinite`
+    svg.style['animation-delay'] = '0.4s'
     svg.style['opacity'] = 0
     svg.style['transition'] = `opacity ${transitionTime}ms ease`
     svg.appendChild(path)
@@ -106,10 +113,7 @@ class AuthCoreWidget {
       // For Safari, Webkit creates scrollbar with `overflow: auto` and if the content
       // scroll size is larger than the padding box size.
       const containerElement = document.getElementById(container)
-      // Provide `overflow: auto` to ensure scroll behaviour, parent in client side should
-      // also be set if necessary(Mainly case for modal dialog)
-      containerElement.className = 'text-center'
-      containerElement.style['overflow'] = 'auto'
+      containerElement.style['text-align'] = 'center'
       // Append the loading spinner and with transition time to show
       containerElement.appendChild(svg)
       setTimeout(() => {
@@ -136,6 +140,9 @@ class AuthCoreWidget {
         // Show the widget instance and remove loading spinner
         widget.style['opacity'] = 1
         svg.remove()
+        // Provide `overflow: auto` to ensure scroll behaviour, parent in client side should
+        // also be set if necessary(Mainly case for modal dialog)
+        document.getElementById(container).style['overflow'] = 'auto'
       }, transitionTime)
       // Sends the access token to the widget
       this.widget.contentWindow.postMessage({
