@@ -38,9 +38,6 @@ suite('widgets.js', function () {
       })
 
       // Testing
-      const container = document.getElementById('authcore-sign-in-widget')
-      assert.equal(container.style.overflow, 'auto')
-
       const iframes = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')
       assert.equal(iframes.length, 1)
 
@@ -50,8 +47,9 @@ suite('widgets.js', function () {
 
       const svg = document.getElementById('authcore-sign-in-widget').getElementsByTagName('svg')[0]
       assert.equal(svg.style.opacity, '0')
-      assert.equal(svg.getAttribute('class'), 'rotate')
       assert.match(svg.style.transition, /opacity/)
+      assert.match(svg.style.animation, /--widgets-spin/)
+      assert.equal(svg.style['animation-delay'], '0.4s')
 
       const path = svg.getElementsByTagName('path')[0]
       assert.equal(path.getAttribute('fill'), 'none')
