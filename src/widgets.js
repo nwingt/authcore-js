@@ -31,6 +31,8 @@ function clearChildren (id) {
  * @param {boolean} [options.display=true] Boolean flag indicating if the widget is visible.
  * @param {boolean} [options.internal=false] Boolean flag indicating if the widget is internally
  *        used. If set to internal, the logo and the footer will not appear.
+ * @param {boolean} [options.requireUsername=false] Boolean flag indicating whether username is included in registration and sign in.
+ * @param {string} options.language Widget language when it is loaded, default to be English when it is not set or the value is invalid or unavailable.
  * @param {Function} options.onSuccess Callback function when the corresponding action has successfully completed.
  * @param {Function} options.onLoaded Callback function when the widget page is loaded.
  * @param {Function} options.unauthenticated Callback function when the widget returns unauthenticated status, most likely to occur due to expired access token.
