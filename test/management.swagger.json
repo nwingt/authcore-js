@@ -18,7 +18,8 @@
   "paths": {
     "/audit_logs": {
       "get": {
-        "summary": "Lists the audit logs.",
+        "summary": "List audit logs",
+        "description": "Lists the audit logs.",
         "operationId": "ListAuditLogs",
         "responses": {
           "200": {
@@ -68,7 +69,8 @@
     },
     "/contacts/verify": {
       "post": {
-        "summary": "Initiates a contact verification for a user.",
+        "summary": "Start verify contact",
+        "description": "Initiates a contact verification for a user.",
         "operationId": "StartVerifyContact",
         "responses": {
           "200": {
@@ -100,7 +102,8 @@
     },
     "/contacts/{contact_id}": {
       "delete": {
-        "summary": "Deletes a contact of a user.",
+        "summary": "Delete contact",
+        "description": "Deletes a contact of a user.",
         "operationId": "DeleteContact",
         "responses": {
           "200": {
@@ -130,7 +133,8 @@
     },
     "/contacts/{contact_id}/primary": {
       "put": {
-        "summary": "Updates the primary contact for a user.",
+        "summary": "Update primary contact",
+        "description": "Updates the primary contact for a user.",
         "operationId": "UpdatePrimaryContact",
         "responses": {
           "200": {
@@ -160,7 +164,8 @@
     },
     "/roles": {
       "get": {
-        "summary": "Lists the roles.",
+        "summary": "List roles",
+        "description": "List the roles.",
         "operationId": "ListRoles",
         "responses": {
           "200": {
@@ -180,7 +185,8 @@
         ]
       },
       "post": {
-        "summary": "Creates a non-system role.",
+        "summary": "Create role",
+        "description": "Creates a non-system role.",
         "operationId": "CreateRole",
         "responses": {
           "200": {
@@ -212,7 +218,8 @@
     },
     "/roles/{role_id}": {
       "delete": {
-        "summary": "Deletes a non-system role.",
+        "summary": "Delete role",
+        "description": "Deletes a non-system role.",
         "operationId": "DeleteRole",
         "responses": {
           "200": {
@@ -242,7 +249,8 @@
     },
     "/roles/{role_id}/permissions": {
       "get": {
-        "summary": "Lists the permission assignments of a role.",
+        "summary": "List permission assignments",
+        "description": "Lists the permission assignments of a role.",
         "operationId": "ListPermissionAssignments",
         "responses": {
           "200": {
@@ -272,7 +280,8 @@
     },
     "/sessions": {
       "get": {
-        "summary": "Lists the active sessions of a user.",
+        "summary": "List sessions",
+        "description": "Lists the active sessions of a user.",
         "operationId": "ListSessions",
         "responses": {
           "200": {
@@ -318,11 +327,32 @@
             "BearerAuth": []
           }
         ]
+      },
+      "post": {
+        "summary": "Create an session.\nThis should be used with caution, as this API assumes the site (admin) to authenticate user with their own means.\nThis can bypass the Authcore login progress by issuing a valid Session.",
+        "operationId": "CreateSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AccessToken"
+            }
+          }
+        },
+        "tags": [
+          "ManagementService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/sessions/{session_id}": {
       "delete": {
-        "summary": "Deletes an active session for a user.",
+        "summary": "Delete session",
+        "description": "Deletes an active session for a user.",
         "operationId": "DeleteSession",
         "responses": {
           "200": {
@@ -352,7 +382,8 @@
     },
     "/users": {
       "get": {
-        "summary": "List the users.",
+        "summary": "List users",
+        "description": "Lists the users.",
         "operationId": "ListUsers",
         "responses": {
           "200": {
@@ -394,7 +425,8 @@
         ]
       },
       "post": {
-        "summary": "Creates a new user.",
+        "summary": "Create user",
+        "description": "Creates a new user.",
         "operationId": "CreateUser",
         "responses": {
           "200": {
@@ -426,7 +458,8 @@
     },
     "/users/current/permissions": {
       "get": {
-        "summary": "Lists the owned permissions.",
+        "summary": "List current user permissions",
+        "description": "Lists the owned permissions.",
         "operationId": "ListCurrentUserPermissions",
         "responses": {
           "200": {
@@ -448,7 +481,8 @@
     },
     "/users/password": {
       "post": {
-        "summary": "Changes the password of a user.",
+        "summary": "Change password",
+        "description": "Changes the password of a user.",
         "operationId": "ChangePassword",
         "responses": {
           "200": {
@@ -480,7 +514,8 @@
     },
     "/users/{user_id}": {
       "get": {
-        "summary": "Gets an user.",
+        "summary": "Get user",
+        "description": "Gets an user.",
         "operationId": "GetUser",
         "responses": {
           "200": {
@@ -508,7 +543,8 @@
         ]
       },
       "put": {
-        "summary": "Updates an user.",
+        "summary": "Update user",
+        "description": "Updates an user.",
         "operationId": "UpdateUser",
         "responses": {
           "200": {
@@ -546,7 +582,8 @@
     },
     "/users/{user_id}/contacts": {
       "get": {
-        "summary": "Lists the contacts of a user.",
+        "summary": "List contacts",
+        "description": "Lists the contacts of a user.",
         "operationId": "ListContacts",
         "responses": {
           "200": {
@@ -580,7 +617,8 @@
         ]
       },
       "post": {
-        "summary": "Adds a contact for a user.",
+        "summary": "Create contact",
+        "description": "Adds a contact for a user.",
         "operationId": "CreateContact",
         "responses": {
           "200": {
@@ -618,7 +656,8 @@
     },
     "/users/{user_id}/metadata": {
       "get": {
-        "summary": "Gets the user metadata and app metadata of a user.",
+        "summary": "Get metadata",
+        "description": "Gets the user metadata and app metadata of a user.",
         "operationId": "GetMetadata",
         "responses": {
           "200": {
@@ -646,7 +685,8 @@
         ]
       },
       "put": {
-        "summary": "Updates the user metadata and app metadata of a user.",
+        "summary": "Update metadata",
+        "description": "Updates the user metadata and app metadata of a user.",
         "operationId": "UpdateMetadata",
         "responses": {
           "200": {
@@ -684,7 +724,8 @@
     },
     "/users/{user_id}/roles": {
       "get": {
-        "summary": "Lists the role assignments of a role.",
+        "summary": "List role assignments",
+        "description": "Lists the role assignments of a role.",
         "operationId": "ListRoleAssignments",
         "responses": {
           "200": {
@@ -712,7 +753,8 @@
         ]
       },
       "post": {
-        "summary": "Assigns a role to a user.",
+        "summary": "Assign role",
+        "description": "Assigns a role to a user.",
         "operationId": "AssignRole",
         "responses": {
           "200": {
@@ -750,7 +792,8 @@
     },
     "/users/{user_id}/roles/{role_id}": {
       "delete": {
-        "summary": "Unassigns a role from a user.",
+        "summary": "Unassign role",
+        "description": "Unassigns a role from a user.",
         "operationId": "UnassignRole",
         "responses": {
           "200": {
@@ -786,7 +829,8 @@
     },
     "/users/{user_id}/second_factors": {
       "get": {
-        "summary": "Lists the second factors of a user.",
+        "summary": "List second factors",
+        "description": "Lists the second factors of a user.",
         "operationId": "ListSecondFactors",
         "responses": {
           "200": {
@@ -816,6 +860,13 @@
     }
   },
   "definitions": {
+    "AccessTokenTokenType": {
+      "type": "string",
+      "enum": [
+        "BEARER"
+      ],
+      "default": "BEARER"
+    },
     "AuditLogEntityResult": {
       "type": "string",
       "enum": [
@@ -935,6 +986,33 @@
         }
       },
       "description": "`Value` represents a dynamically typed value which can be either\nnull, a number, a string, a boolean, a recursive struct value, or a\nlist of values. A producer of value is expected to set one of that\nvariants, absence of any variant indicates an error.\n\nThe JSON representation for `Value` is JSON value."
+    },
+    "v1AccessToken": {
+      "type": "object",
+      "properties": {
+        "access_token": {
+          "type": "string",
+          "description": "The access token issued by the server."
+        },
+        "refresh_token": {
+          "type": "string",
+          "description": "The new refresh token for obtaining access token later."
+        },
+        "token_type": {
+          "$ref": "#/definitions/AccessTokenTokenType",
+          "description": "Type of the token."
+        },
+        "expires_in": {
+          "type": "string",
+          "format": "int64",
+          "description": "The lifetime in seconds of the access token."
+        },
+        "id_token": {
+          "type": "string",
+          "description": "The ID token issued by the server."
+        }
+      },
+      "description": "An access token."
     },
     "v1AssignRoleRequest": {
       "type": "object",
@@ -1236,21 +1314,16 @@
     "v1PasswordResponse": {
       "type": "object",
       "properties": {
-        "challenge_token": {
+        "token": {
           "type": "string"
         },
-        "M1": {
+        "confirmation": {
           "type": "string",
           "format": "byte",
-          "description": "The proof defined by the SRP protocol."
-        },
-        "A": {
-          "type": "string",
-          "format": "byte",
-          "description": "The one-time ephemeral key of the client."
+          "description": "The confirmation message of the client."
         }
       },
-      "description": "The SRP response for the username-password pair, under the corresponding challenge."
+      "description": "The SPAKE2+ response (comfirmation for SPAKE2+)."
     },
     "v1PasswordVerifier": {
       "type": "object",
@@ -1260,13 +1333,18 @@
           "format": "byte",
           "description": "The salt used to hash the password."
         },
-        "verifier": {
+        "verifierW0": {
           "type": "string",
           "format": "byte",
-          "description": "The password verifier defined by the SRP protocol."
+          "description": "The password verifier defined by the SPAKE2+ protocol."
+        },
+        "verifierL": {
+          "type": "string",
+          "format": "byte",
+          "description": "The password verifier defined by the SPAKE2+ protocol."
         }
       },
-      "description": "A password verifier of a given username-password pair for the server to authenticate the user\nvia the secure remote password (SRP) protocol."
+      "description": "A password verifier of a given username-password pair for the server to authenticate the user\nvia the SPAKE2+ protocol."
     },
     "v1Permission": {
       "type": "object",
@@ -1361,6 +1439,10 @@
         "created_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "is_current": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "An active session."

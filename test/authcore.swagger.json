@@ -16,15 +16,16 @@
     "application/json"
   ],
   "paths": {
-    "/auth": {
+    "/auth/first/oauth": {
       "post": {
-        "summary": "Creates a new authentication flow by requesting a password challenge.",
-        "operationId": "StartAuthentication",
+        "summary": "Authenticate with OAuth",
+        "description": "Authenticates a user by an OAuth factor.",
+        "operationId": "AuthenticateOAuth",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1AuthenticationState"
+              "$ref": "#/definitions/v1AuthenticateOAuthResponse"
             }
           }
         },
@@ -34,34 +35,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1StartAuthenticationRequest"
-            }
-          }
-        ],
-        "tags": [
-          "AuthService"
-        ]
-      }
-    },
-    "/auth/first": {
-      "post": {
-        "summary": "Authenticates a user by a first factor.",
-        "operationId": "Authenticate",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/v1AuthenticationState"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/v1AuthenticateRequest"
+              "$ref": "#/definitions/v1AuthenticateOAuthRequest"
             }
           }
         ],
@@ -72,7 +46,8 @@
     },
     "/auth/oauth": {
       "get": {
-        "summary": "Creates a new authentication flow by requesting a new OAuth state.",
+        "summary": "Start authentication with OAuth",
+        "description": "Creates a new authentication flow by requesting a new OAuth state.",
         "operationId": "StartAuthenticateOAuth",
         "responses": {
           "200": {
@@ -101,7 +76,8 @@
     },
     "/auth/reset_password": {
       "post": {
-        "summary": "Creates a new authentication flow by requesting an email (or SMS) for reset password.",
+        "summary": "Start reset password authentication",
+        "description": "Creates a new authentication flow by requesting an email (or SMS) for reset password.",
         "operationId": "StartResetPasswordAuthentication",
         "responses": {
           "200": {
@@ -128,7 +104,8 @@
     },
     "/auth/reset_password/first": {
       "post": {
-        "summary": "Authenticates a user by a first factor for reset password.",
+        "summary": "Authenticate reset password",
+        "description": "Authenticates a user by a first factor for reset password.",
         "operationId": "AuthenticateResetPassword",
         "responses": {
           "200": {
@@ -155,7 +132,8 @@
     },
     "/auth/reset_password/second": {
       "post": {
-        "summary": "Authenticates a user by a second factor for reset password.",
+        "summary": "Authenticate reset password second factor",
+        "description": "Authenticates a user by a second factor for reset password.",
         "operationId": "AuthenticateResetPasswordSecondFactor",
         "responses": {
           "200": {
@@ -182,7 +160,8 @@
     },
     "/auth/second": {
       "post": {
-        "summary": "Authenticates a user by a second factor.",
+        "summary": "Authenticate second factor",
+        "description": "Authenticates a user by a second factor.",
         "operationId": "AuthenticateSecondFactor",
         "responses": {
           "200": {
@@ -209,7 +188,8 @@
     },
     "/auth/second/start": {
       "post": {
-        "summary": "Requests a challenge for the second-factor authentication.",
+        "summary": "Start second factor authentication",
+        "description": "Requests a challenge for the second-factor authentication.",
         "operationId": "StartAuthenticateSecondFactor",
         "responses": {
           "200": {
@@ -234,9 +214,94 @@
         ]
       }
     },
+    "/authn/password/finish": {
+      "post": {
+        "summary": "Finish password authentication",
+        "description": "Finish password authentication by confirming SPAKE2+ confirmation.",
+        "operationId": "FinishPasswordAuthn",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AuthenticationState"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1FinishPasswordAuthnRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/authn/password/key_exchange": {
+      "post": {
+        "summary": "Authenticate password",
+        "description": "Creates a new authentication flow by requesting a password challenge.",
+        "operationId": "PasswordAuthnKeyExchange",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AuthenticationState"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1PasswordAuthnKeyExchangeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
+    "/authn/password/start": {
+      "post": {
+        "summary": "Start password authentication.",
+        "description": "Create a new authentication flow by requesting password parameters.",
+        "operationId": "StartPasswordAuthn",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1AuthenticationState"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1StartPasswordAuthnRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ]
+      }
+    },
     "/challenges/proof_of_work": {
       "post": {
-        "summary": "Creates a proof of work challenge.",
+        "summary": "Create proof-of-work challenge",
+        "description": "Creates a proof of work challenge.",
         "operationId": "CreateProofOfWorkChallenge",
         "responses": {
           "200": {
@@ -263,7 +328,8 @@
     },
     "/contacts": {
       "get": {
-        "summary": "Lists the owned contacts.",
+        "summary": "List contacts",
+        "description": "Lists the owned contacts.",
         "operationId": "ListContacts",
         "responses": {
           "200": {
@@ -291,7 +357,8 @@
         ]
       },
       "post": {
-        "summary": "Creates a new contact for the current user.",
+        "summary": "Create contact",
+        "description": "Creates a new contact for the current user.",
         "operationId": "CreateContact",
         "responses": {
           "200": {
@@ -323,7 +390,8 @@
     },
     "/contacts/verify": {
       "post": {
-        "summary": "Starts the contact verification flow.",
+        "summary": "Start verify contact",
+        "description": "Starts the contact verification flow.",
         "operationId": "StartVerifyContact",
         "responses": {
           "200": {
@@ -353,7 +421,8 @@
         ]
       },
       "put": {
-        "summary": "Completes a contact verification with verification code for the current user.",
+        "summary": "Verify contact",
+        "description": "Completes a contact verification with verification code for the current user.",
         "operationId": "CompleteVerifyContact",
         "responses": {
           "200": {
@@ -385,7 +454,8 @@
     },
     "/contacts/{contact_id}": {
       "delete": {
-        "summary": "Deletes an owned contact.",
+        "summary": "Delete contact",
+        "description": "Deletes an owned contact.",
         "operationId": "DeleteContact",
         "responses": {
           "200": {
@@ -415,7 +485,8 @@
     },
     "/contacts/{contact_id}/primary": {
       "put": {
-        "summary": "Updates the primary contact for the current user.",
+        "summary": "Update primary contact",
+        "description": "Updates the primary contact for the current user.",
         "operationId": "UpdatePrimaryContact",
         "responses": {
           "200": {
@@ -445,7 +516,8 @@
     },
     "/device": {
       "post": {
-        "summary": "Registers a new device.",
+        "summary": "Register device",
+        "description": "Registers a new device.",
         "operationId": "CreateDeviceRegistration",
         "responses": {
           "200": {
@@ -472,7 +544,8 @@
     },
     "/machine_tokens": {
       "post": {
-        "summary": "Creates machine-to-machine token. This method will be replaced by service account API in the future.",
+        "summary": "Create machine token",
+        "description": "Creates machine-to-machine token. This method will be replaced by service account API in the future.",
         "operationId": "CreateMachineToken",
         "responses": {
           "200": {
@@ -494,12 +567,18 @@
         ],
         "tags": [
           "AuthService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
         ]
       }
     },
     "/oauth/validate_params": {
       "get": {
-        "summary": "Validates the parameters used for OAuth authentication.",
+        "summary": "Validate OAuth parameters",
+        "description": "Validates the parameters used for OAuth authentication.",
         "operationId": "ValidateOAuthParameters",
         "responses": {
           "200": {
@@ -548,7 +627,8 @@
     },
     "/oauth_factors": {
       "get": {
-        "summary": "Lists the owned OAuth factors.",
+        "summary": "List OAuth factors",
+        "description": "Lists the owned OAuth factors.",
         "operationId": "ListOAuthFactors",
         "responses": {
           "200": {
@@ -568,7 +648,8 @@
         ]
       },
       "post": {
-        "summary": "Creates an OAuth factor of the current user by the response from OAuth.",
+        "summary": "Create OAuth factor",
+        "description": "Creates an OAuth factor of the current user by the response from OAuth.",
         "operationId": "CreateOAuthFactor",
         "responses": {
           "200": {
@@ -598,9 +679,43 @@
         ]
       }
     },
+    "/oauth_factors/access_token": {
+      "post": {
+        "summary": "Create OAuth factor by access token",
+        "description": "Creates an OAuth factor of the current user by an encrypted access token.",
+        "operationId": "CreateOAuthFactorByAccessToken",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateOAuthFactorByAccessTokenResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateOAuthFactorByAccessTokenRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
     "/oauth_factors/start": {
       "get": {
-        "summary": "Initiates the process to create external OAuth authentication as the first factor.",
+        "summary": "Start create OAuth factor",
+        "description": "Initiates the process to create external OAuth authentication as the first factor.",
         "operationId": "StartCreateOAuthFactor",
         "responses": {
           "200": {
@@ -634,7 +749,8 @@
     },
     "/oauth_factors/{id}": {
       "delete": {
-        "summary": "Deletes an owned OAuth factor.",
+        "summary": "Delete OAuth factor",
+        "description": "Deletes an owned OAuth factor.",
         "operationId": "DeleteOAuthFactor",
         "responses": {
           "200": {
@@ -664,7 +780,8 @@
     },
     "/second_factors": {
       "get": {
-        "summary": "Lists the owned second factors.",
+        "summary": "List second factors",
+        "description": "Lists the owned second factors.",
         "operationId": "ListSecondFactors",
         "responses": {
           "200": {
@@ -692,7 +809,8 @@
         ]
       },
       "post": {
-        "summary": "Creates a second factor of the current user.",
+        "summary": "Create second factor",
+        "description": "Creates a second factor of the current user.",
         "operationId": "CreateSecondFactor",
         "responses": {
           "200": {
@@ -724,7 +842,8 @@
     },
     "/second_factors/start": {
       "post": {
-        "summary": "Initiates the process of creating second factor.",
+        "summary": "Start create second factor",
+        "description": "Initiates the process of creating second factor.",
         "operationId": "StartCreateSecondFactor",
         "responses": {
           "200": {
@@ -756,7 +875,8 @@
     },
     "/second_factors/{id}": {
       "delete": {
-        "summary": "Deletes an owned second factor.",
+        "summary": "Delete second factor",
+        "description": "Deletes an owned second factor.",
         "operationId": "DeleteSecondFactor",
         "responses": {
           "200": {
@@ -786,7 +906,8 @@
     },
     "/sessions": {
       "get": {
-        "summary": "Lists the active sessions of the current user.",
+        "summary": "List sessions",
+        "description": "Lists the active sessions of the current user.",
         "operationId": "ListSessions",
         "responses": {
           "200": {
@@ -826,11 +947,33 @@
             "BearerAuth": []
           }
         ]
+      },
+      "delete": {
+        "summary": "Delete current session",
+        "description": "Deletes the current session of the current user.",
+        "operationId": "DeleteCurrentSession",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1DeleteCurrentSessionResponse"
+            }
+          }
+        },
+        "tags": [
+          "AuthService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
       }
     },
     "/sessions/{session_id}": {
       "delete": {
-        "summary": "Deletes an active session of the current user.",
+        "summary": "Delete session",
+        "description": "Deletes an active session of the current user.",
         "operationId": "DeleteSession",
         "responses": {
           "200": {
@@ -860,7 +1003,8 @@
     },
     "/tokens": {
       "post": {
-        "summary": "Creates a new access token that can be used to access the authenticated APIs.",
+        "summary": "Create access token",
+        "description": "Creates a new access token that can be used to access the authenticated APIs.",
         "operationId": "CreateAccessToken",
         "responses": {
           "200": {
@@ -887,7 +1031,8 @@
     },
     "/users": {
       "post": {
-        "summary": "Creates a new user.",
+        "summary": "Create user",
+        "description": "Creates a new user.",
         "operationId": "CreateUser",
         "responses": {
           "200": {
@@ -914,7 +1059,8 @@
     },
     "/users/current": {
       "get": {
-        "summary": "Gets the profile of the current user.",
+        "summary": "Get current user",
+        "description": "Gets the profile of the current user.",
         "operationId": "GetCurrentUser",
         "responses": {
           "200": {
@@ -934,7 +1080,8 @@
         ]
       },
       "put": {
-        "summary": "Updates the profile of the current user.",
+        "summary": "Update current user",
+        "description": "Updates the profile of the current user.",
         "operationId": "UpdateCurrentUser",
         "responses": {
           "200": {
@@ -964,15 +1111,16 @@
         ]
       }
     },
-    "/users/current/password": {
+    "/users/current/password/finish": {
       "post": {
-        "summary": "Changes the password for the current user.",
-        "operationId": "ChangePassword",
+        "summary": "Change password",
+        "description": "Changes the password for the current user.",
+        "operationId": "FinishChangePassword",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/v1ChangePasswordResponse"
+              "$ref": "#/definitions/v1FinishChangePasswordResponse"
             }
           }
         },
@@ -982,7 +1130,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/v1ChangePasswordRequest"
+              "$ref": "#/definitions/v1FinishChangePasswordRequest"
             }
           }
         ],
@@ -996,15 +1144,49 @@
         ]
       }
     },
-    "/users/current/password/challenge": {
+    "/users/current/password/key_exchange": {
       "post": {
-        "summary": "Creates a challenge for secure remote password (SRP) for the current user.",
-        "operationId": "CreatePasswordChallenge",
+        "summary": "Create password challenge",
+        "description": "Creates a challenge for SPAKE2+ for the current user.",
+        "operationId": "ChangePasswordKeyExchange",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/v1PasswordChallenge"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ChangePasswordKeyExchangeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AuthService"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/users/current/password/start": {
+      "get": {
+        "summary": "Start Change Password",
+        "description": "Create a change password flow for current user by requesting password parameters.",
+        "operationId": "StartChangePassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1StartChangePasswordResponse"
             }
           }
         },
@@ -1020,7 +1202,8 @@
     },
     "/users/metadata": {
       "get": {
-        "summary": "Gets the user metadata of the current user.",
+        "summary": "Get metadata",
+        "description": "Gets the user metadata of the current user.",
         "operationId": "GetMetadata",
         "responses": {
           "200": {
@@ -1040,7 +1223,8 @@
         ]
       },
       "put": {
-        "summary": "Updates the user metadata of the current user.",
+        "summary": "Update metadata",
+        "description": "Updates the user metadata of the current user.",
         "operationId": "UpdateMetadata",
         "responses": {
           "200": {
@@ -1072,7 +1256,8 @@
     },
     "/users/reset_password": {
       "post": {
-        "summary": "Resets the password.",
+        "summary": "Reset password",
+        "description": "Resets the password.",
         "operationId": "ResetPassword",
         "responses": {
           "200": {
@@ -1193,21 +1378,39 @@
       },
       "description": "An access token."
     },
-    "v1AuthenticateRequest": {
+    "v1AuthenticateOAuthRequest": {
       "type": "object",
       "properties": {
         "temporary_token": {
-          "type": "string",
-          "description": "A temporary token that is used during the authentication flow."
-        },
-        "password_response": {
-          "$ref": "#/definitions/v1PasswordResponse"
+          "type": "string"
         },
         "oauth_response": {
           "$ref": "#/definitions/v1OAuthResponse"
         }
       },
-      "description": "The request for Authenticate."
+      "description": "The request for AuthenticateOAuth."
+    },
+    "v1AuthenticateOAuthResponse": {
+      "type": "object",
+      "properties": {
+        "authentication_state": {
+          "$ref": "#/definitions/v1AuthenticationState"
+        },
+        "create_account": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "preferred_email": {
+          "type": "string"
+        },
+        "access_token": {
+          "type": "string"
+        },
+        "service": {
+          "$ref": "#/definitions/OAuthFactorOAuthService"
+        }
+      },
+      "description": "The response for AuthenticateOAuth."
     },
     "v1AuthenticateResetPasswordRequest": {
       "type": "object",
@@ -1270,7 +1473,11 @@
         },
         "password_challenge": {
           "$ref": "#/definitions/v1PasswordChallenge",
-          "description": "A new PasswordChallenge if SECURE_REMOTE_PASSWORD is one of the `challenges`. Otherwise, it\nwill be empty."
+          "description": "A new PasswordChallenge if PASSWORD is one of the `challenges`. Otherwise, it\nwill be empty."
+        },
+        "password_salt": {
+          "type": "string",
+          "format": "byte"
         },
         "authorization_token": {
           "type": "string",
@@ -1281,7 +1488,7 @@
     "v1AuthenticationStateChallengeType": {
       "type": "string",
       "enum": [
-        "SECURE_REMOTE_PASSWORD",
+        "PASSWORD",
         "TIME_BASED_ONE_TIME_PASSWORD",
         "UNIVERSAL_TWO_FACTOR",
         "EMAIL_CODE",
@@ -1289,27 +1496,22 @@
         "OAUTH",
         "BACKUP_CODE"
       ],
-      "default": "SECURE_REMOTE_PASSWORD"
+      "default": "PASSWORD"
     },
     "v1BackupCodeInfo": {
       "type": "object",
       "description": "Information for backup code."
     },
-    "v1ChangePasswordRequest": {
+    "v1ChangePasswordKeyExchangeRequest": {
       "type": "object",
       "properties": {
-        "password_verifier": {
-          "$ref": "#/definitions/v1PasswordVerifier"
-        },
-        "old_password_response": {
-          "$ref": "#/definitions/v1PasswordResponse"
+        "message": {
+          "type": "string",
+          "format": "byte",
+          "description": "The key-exchange request message of the client."
         }
       },
-      "description": "The request for ChangePassword."
-    },
-    "v1ChangePasswordResponse": {
-      "type": "object",
-      "description": "The response for ChangePassword."
+      "title": "The request for ChangePasswordKeyExchange"
     },
     "v1CheckHandleAvailabilityResponse": {
       "type": "object",
@@ -1323,6 +1525,9 @@
         },
         "code": {
           "$ref": "#/definitions/v1ContactVerificationCode"
+        },
+        "oauth_access_token": {
+          "type": "string"
         }
       },
       "description": "The request for CompleteVerifyContact."
@@ -1404,6 +1609,30 @@
       },
       "title": "The response for CreateMachineToken"
     },
+    "v1CreateOAuthFactorByAccessTokenRequest": {
+      "type": "object",
+      "properties": {
+        "access_token": {
+          "type": "string"
+        },
+        "service": {
+          "$ref": "#/definitions/OAuthFactorOAuthService"
+        }
+      },
+      "description": "The request for CreateOAuthFactorByAccessToken."
+    },
+    "v1CreateOAuthFactorByAccessTokenResponse": {
+      "type": "object",
+      "properties": {
+        "access_token": {
+          "type": "string"
+        },
+        "service": {
+          "$ref": "#/definitions/OAuthFactorOAuthService"
+        }
+      },
+      "description": "The response for CreateOAuthFactorByAccessToken."
+    },
     "v1CreateOAuthFactorRequest": {
       "type": "object",
       "properties": {
@@ -1455,6 +1684,10 @@
         },
         "display_name": {
           "type": "string"
+        },
+        "send_verification": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "The request for CreateUser."
@@ -1474,6 +1707,10 @@
     "v1DeleteContactResponse": {
       "type": "object",
       "description": "The response for DeleteContact."
+    },
+    "v1DeleteCurrentSessionResponse": {
+      "type": "object",
+      "description": "The response for DeleteCurrentSession."
     },
     "v1DeleteOAuthFactorResponse": {
       "type": "object",
@@ -1499,6 +1736,35 @@
         }
       },
       "description": "Device registration."
+    },
+    "v1FinishChangePasswordRequest": {
+      "type": "object",
+      "properties": {
+        "password_verifier": {
+          "$ref": "#/definitions/v1PasswordVerifier"
+        },
+        "old_password_response": {
+          "$ref": "#/definitions/v1PasswordResponse"
+        }
+      },
+      "description": "The request for FinishChangePassword."
+    },
+    "v1FinishChangePasswordResponse": {
+      "type": "object",
+      "description": "The response for FinishChangePassword."
+    },
+    "v1FinishPasswordAuthnRequest": {
+      "type": "object",
+      "properties": {
+        "temporary_token": {
+          "type": "string",
+          "description": "A temporary token that is used during the authentication flow."
+        },
+        "password_response": {
+          "$ref": "#/definitions/v1PasswordResponse"
+        }
+      },
+      "description": "The request for FinishPasswordAuthn."
     },
     "v1GetMetadataResponse": {
       "type": "object",
@@ -1607,43 +1873,48 @@
       },
       "description": "An OAuth response."
     },
+    "v1PasswordAuthnKeyExchangeRequest": {
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string",
+          "format": "byte",
+          "description": "The key-exchange request message of the client."
+        },
+        "temporary_token": {
+          "type": "string",
+          "description": "A temporary token that is used during the authentication flow."
+        }
+      },
+      "description": "The request for PasswordAuthnKeyExchange."
+    },
     "v1PasswordChallenge": {
       "type": "object",
       "properties": {
         "token": {
           "type": "string"
         },
-        "salt": {
+        "message": {
           "type": "string",
           "format": "byte",
-          "description": "The salt used to hash the password."
-        },
-        "B": {
-          "type": "string",
-          "format": "byte",
-          "description": "The one-time ephemeral key of the server."
+          "description": "The key-exchange response message of the server."
         }
       },
-      "description": "The SRP challenge from the server."
+      "description": "The SPAKE2+ challenge from the server (incomingMessage from SPAKE2+)."
     },
     "v1PasswordResponse": {
       "type": "object",
       "properties": {
-        "challenge_token": {
+        "token": {
           "type": "string"
         },
-        "M1": {
+        "confirmation": {
           "type": "string",
           "format": "byte",
-          "description": "The proof defined by the SRP protocol."
-        },
-        "A": {
-          "type": "string",
-          "format": "byte",
-          "description": "The one-time ephemeral key of the client."
+          "description": "The confirmation message of the client."
         }
       },
-      "description": "The SRP response for the username-password pair, under the corresponding challenge."
+      "description": "The SPAKE2+ response (comfirmation for SPAKE2+)."
     },
     "v1PasswordVerifier": {
       "type": "object",
@@ -1653,13 +1924,18 @@
           "format": "byte",
           "description": "The salt used to hash the password."
         },
-        "verifier": {
+        "verifierW0": {
           "type": "string",
           "format": "byte",
-          "description": "The password verifier defined by the SRP protocol."
+          "description": "The password verifier defined by the SPAKE2+ protocol."
+        },
+        "verifierL": {
+          "type": "string",
+          "format": "byte",
+          "description": "The password verifier defined by the SPAKE2+ protocol."
         }
       },
-      "description": "A password verifier of a given username-password pair for the server to authenticate the user\nvia the secure remote password (SRP) protocol."
+      "description": "A password verifier of a given username-password pair for the server to authenticate the user\nvia the SPAKE2+ protocol."
     },
     "v1ProofOfWorkChallenge": {
       "type": "object",
@@ -1822,6 +2098,10 @@
         "created_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "is_current": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "An active session."
@@ -1853,19 +2133,16 @@
       "type": "object",
       "description": "The response for StartAuthenticateSecondFactor."
     },
-    "v1StartAuthenticationRequest": {
+    "v1StartChangePasswordResponse": {
       "type": "object",
       "properties": {
-        "user_handle": {
+        "salt": {
           "type": "string",
-          "description": "Username, primary email or primary phone number of the user."
-        },
-        "device_token": {
-          "type": "string",
-          "description": "A device token that authenticates the device."
+          "format": "byte",
+          "description": "Salt for the user."
         }
       },
-      "description": "The request for StartAuthentication."
+      "title": "The response for StartChangePassword"
     },
     "v1StartCreateOAuthFactorResponse": {
       "type": "object",
@@ -1888,6 +2165,20 @@
     "v1StartCreateSecondFactorResponse": {
       "type": "object",
       "description": "The response for StartCreateSecondFactor."
+    },
+    "v1StartPasswordAuthnRequest": {
+      "type": "object",
+      "properties": {
+        "user_handle": {
+          "type": "string",
+          "description": "Username, primary email or primary phone number of the user."
+        },
+        "device_token": {
+          "type": "string",
+          "description": "A device token that authenticates the device."
+        }
+      },
+      "description": "The request for StartPasswordAuthn."
     },
     "v1StartResetPasswordAuthenticationRequest": {
       "type": "object",

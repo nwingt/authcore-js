@@ -18,7 +18,8 @@
   "paths": {
     "/operation": {
       "post": {
-        "summary": "Performs an operation in the key vault.",
+        "summary": "Perform operation",
+        "description": "Performs an operation in the key vault.",
         "operationId": "PerformOperation",
         "responses": {
           "200": {
@@ -50,6 +51,24 @@
     }
   },
   "definitions": {
+    "v1CosmosSignRequest": {
+      "type": "object",
+      "properties": {
+        "object_id": {
+          "type": "string",
+          "description": "The id of the secret."
+        },
+        "wallet_path": {
+          "type": "string",
+          "description": "The derivation path of the secret object for the wallet."
+        },
+        "data": {
+          "type": "string",
+          "description": "The data to be signed. Should be a stringify JSON."
+        }
+      },
+      "description": "The request of CosmosSign."
+    },
     "v1CreateSecretRequest": {
       "type": "object",
       "properties": {
@@ -93,7 +112,7 @@
           "description": "The data to be signed. In particular for type = TYPED_MESSAGE, it should be in JSON format\nafter hex-decode."
         }
       },
-      "description": "The request of Sign."
+      "description": "The request of EthereumSign."
     },
     "v1EthereumSignRequestType": {
       "type": "string",
@@ -151,6 +170,9 @@
         },
         "list_hd_child_public_keys": {
           "$ref": "#/definitions/v1ListHDChildPublicKeysRequest"
+        },
+        "cosmos_sign": {
+          "$ref": "#/definitions/v1CosmosSignRequest"
         }
       },
       "description": "The request for PerformOperation."

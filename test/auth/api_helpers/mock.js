@@ -1,5 +1,8 @@
 const nock = require('nock')
 
+/**
+ * @param {*} steps The steps.
+ */
 function mockAPI(steps) {
   nock.cleanAll()
   steps.forEach(function (step) {
@@ -41,11 +44,22 @@ function mockAPI(steps) {
           )
         break
       case 'CreatePasswordChallenge':
-        nock('http://0.0.0.0:13337').post('/api/auth/users/current/password/challenge').times(count)
+        nock('http://0.0.0.0:13337').get('/api/auth/users/current/password/start').times(count)
           .replyWithFile(
             200, `${__dirname}/create_password_challenge.json`,
             { 'Content-Type': 'application/json' }
           )
+        break
+      case 'ChangePasswordKeyExchange':
+        nock('http://0.0.0.0:13337').post('/api/auth/users/current/password/key_exchange').times(count)
+          .replyWithFile(
+            200, `${__dirname}/change_password_key_exchange.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'FinishChangePassword':
+        nock('http://0.0.0.0:13337').post('/api/auth/users/current/password/finish').times(count)
+          .reply(200, {})
         break
       case 'CreateAccessToken':
         nock('http://0.0.0.0:13337').post('/api/auth/tokens').times(count)
@@ -66,6 +80,48 @@ function mockAPI(steps) {
         nock('http://0.0.0.0:13337').post('/api/auth/auth').times(count)
           .replyWithFile(
             200, `${__dirname}/start_authentication.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'StartPasswordAuthn':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/start').times(count)
+          .replyWithFile(
+            200, `${__dirname}/start_password_authn.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'PasswordAuthnKeyExchange':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/key_exchange').times(count)
+          .replyWithFile(
+            200, `${__dirname}/password_authn_key_exchange.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'FinishPasswordAuthn':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/finish').times(count)
+          .replyWithFile(
+            200, `${__dirname}/finish_password_authn.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'FinishPasswordAuthnTOTP':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/finish').times(count)
+          .replyWithFile(
+            200, `${__dirname}/finish_password_authn_totp.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'FinishPasswordAuthnSMS':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/finish').times(count)
+          .replyWithFile(
+            200, `${__dirname}/finish_password_authn_sms.json`,
+            { 'Content-Type': 'application/json' }
+          )
+        break
+      case 'FinishPasswordAuthnWrong':
+        nock('http://0.0.0.0:13337').post('/api/auth/authn/password/finish').times(count)
+          .replyWithFile(
+            500, `${__dirname}/finish_password_authn_wrong.json`,
             { 'Content-Type': 'application/json' }
           )
         break

@@ -1,10 +1,7 @@
 // swagger wrapper
 const Swagger = require('swagger-client')
 
-const srp = require('../crypto/srp.js')
-const { scrypt } = require('../crypto/scrypt.js')
-const formatBuffer = require('../utils/formatBuffer.js')
-const unicodeNorm = require('../utils/unicodeNorm.js')
+const spake2 = require('../crypto/spake2.js')
 
 /**
  * The class interacting between web client and AuthCore ManagementAPI server.
@@ -478,19 +475,14 @@ class AuthCoreManagementClient {
     const userId = createUserResBody['user']['id']
 
     // Step 2: Change the password of the created user
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
+    const { salt, verifier } = await spake2.createVerifier(password)
     await ManagementService.ChangePassword({
       'body': {
         'user_id': userId.toString(),
         'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
+          'salt': salt,
+          'verifierW0': verifier.w0,
+          'verifierL': verifier.L
         }
       }
     })
@@ -506,20 +498,14 @@ class AuthCoreManagementClient {
   async changePassword (userId, newPassword) {
     const { ManagementService } = this
 
-    const { username } = await this.getUser(userId)
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
+    const { salt, verifier } = await spake2.createVerifier(newPassword)
     await ManagementService.ChangePassword({
       'body': {
         'user_id': userId.toString(),
         'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
+          'salt': salt,
+          'verifierW0': verifier.w0,
+          'verifierL': verifier.L
         }
       }
     })

@@ -81,3 +81,5 @@ typings/
 
 # documentation build output
 /doc
+
+.package-alias.json

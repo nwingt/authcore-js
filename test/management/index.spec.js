@@ -381,7 +381,6 @@ suite('management/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerMgmtClient' },
-        { type: 'GetUser' },
         { type: 'ChangePassword' }
       ])
       // Test
