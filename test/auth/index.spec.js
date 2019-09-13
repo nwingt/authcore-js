@@ -32,7 +32,7 @@ suite('auth/index.js', function () {
         { type: 'SwaggerClient', count: 2 },
         { type: 'CreateUser' },
         { type: 'CreateAccessToken' },
-        { type: 'ChangePassword' }
+        { type: 'FinishChangePassword' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
@@ -72,9 +72,9 @@ suite('auth/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerClient' },
-        { type: 'GetCurrentUser' },
         { type: 'CreatePasswordChallenge' },
-        { type: 'ChangePassword' }
+        { type: 'ChangePasswordKeyExchange' },
+        { type: 'FinishChangePassword' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({
@@ -89,38 +89,17 @@ suite('auth/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerClient' },
-        { type: 'StartAuthentication' },
-        { type: 'Authenticate' }
+        { type: 'StartPasswordAuthn' },
+        { type: 'PasswordAuthnKeyExchange' },
+        { type: 'FinishPasswordAuthn' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
       const startAuthenticationResponse = await authClient.startAuthentication('samuel')
-      assert.include(startAuthenticationResponse['challenges'], 'SECURE_REMOTE_PASSWORD')
+      assert.include(startAuthenticationResponse['challenges'], 'PASSWORD')
       assert.exists(startAuthenticationResponse['temporary_token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['salt'])
-      assert.exists(startAuthenticationResponse['password_challenge']['B'])
-      const authenticateResponse = await authClient.authenticateWithSRP('password')
-      assert.isTrue(authenticateResponse['authenticated'])
-      assert.isTrue(nock.isDone())
-    })
-
-    test('should be able to sign in to an account with email', async function () {
-      // Mock
-      mockAPI([
-        { type: 'SwaggerClient' },
-        { type: 'StartAuthentication' },
-        { type: 'Authenticate' }
-      ])
-      // Test
-      const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
-      const startAuthenticationResponse = await authClient.startAuthentication('samuel@blocksq.com')
-      assert.include(startAuthenticationResponse['challenges'], 'SECURE_REMOTE_PASSWORD')
-      assert.exists(startAuthenticationResponse['temporary_token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['salt'])
-      assert.exists(startAuthenticationResponse['password_challenge']['B'])
-      const authenticateResponse = await authClient.authenticateWithSRP('password')
+      assert.exists(startAuthenticationResponse['password_salt'])
+      const authenticateResponse = await authClient.authenticateWithPassword('password')
       assert.isTrue(authenticateResponse['authenticated'])
       assert.isTrue(nock.isDone())
     })
@@ -129,18 +108,17 @@ suite('auth/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerClient' },
-        { type: 'StartAuthentication' },
-        { type: 'AuthenticateWrong' }
+        { type: 'StartPasswordAuthn' },
+        { type: 'PasswordAuthnKeyExchange' },
+        { type: 'FinishPasswordAuthnWrong' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
       const startAuthenticationResponse = await authClient.startAuthentication('samuel')
-      assert.include(startAuthenticationResponse['challenges'], 'SECURE_REMOTE_PASSWORD')
+      assert.include(startAuthenticationResponse['challenges'], 'PASSWORD')
       assert.exists(startAuthenticationResponse['temporary_token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['salt'])
-      assert.exists(startAuthenticationResponse['password_challenge']['B'])
-      await assert.isRejected(authClient.authenticateWithSRP('password?'))
+      assert.exists(startAuthenticationResponse['password_salt'])
+      await assert.isRejected(authClient.authenticateWithPassword('password?'))
       assert.isTrue(nock.isDone())
     })
 
@@ -148,19 +126,15 @@ suite('auth/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerClient' },
-        { type: 'StartAuthentication' },
-        { type: 'AuthenticateTOTP' },
+        { type: 'StartPasswordAuthn' },
+        { type: 'PasswordAuthnKeyExchange' },
+        { type: 'FinishPasswordAuthnTOTP' },
         { type: 'AuthenticateSecondFactor' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
-      const startAuthenticationResponse = await authClient.startAuthentication('samuel')
-      assert.include(startAuthenticationResponse['challenges'], 'SECURE_REMOTE_PASSWORD')
-      assert.exists(startAuthenticationResponse['temporary_token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['salt'])
-      assert.exists(startAuthenticationResponse['password_challenge']['B'])
-      const authenticateResponse = await authClient.authenticateWithSRP('password')
+      await authClient.startAuthentication('samuel')
+      const authenticateResponse = await authClient.authenticateWithPassword('password')
       assert.include(authenticateResponse['challenges'], 'TIME_BASED_ONE_TIME_PASSWORD')
       assert.exists(authenticateResponse['temporary_token'])
       const authenticateSecondFactorResponse = await authClient.authenticateWithTOTP('131072')
@@ -172,21 +146,17 @@ suite('auth/index.js', function () {
       // Mock
       mockAPI([
         { type: 'SwaggerClient' },
-        { type: 'StartAuthentication' },
-        { type: 'AuthenticateSMS' },
+        { type: 'StartPasswordAuthn' },
+        { type: 'PasswordAuthnKeyExchange' },
+        { type: 'FinishPasswordAuthnTOTP' },
         { type: 'StartAuthenticateSMS' },
         { type: 'AuthenticateSecondFactor' }
       ])
       // Test
       const authClient = await new AuthCoreAuthClient({ apiBaseURL: 'http://0.0.0.0:13337' })
-      const startAuthenticationResponse = await authClient.startAuthentication('samuel')
-      assert.include(startAuthenticationResponse['challenges'], 'SECURE_REMOTE_PASSWORD')
-      assert.exists(startAuthenticationResponse['temporary_token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['token'])
-      assert.exists(startAuthenticationResponse['password_challenge']['salt'])
-      assert.exists(startAuthenticationResponse['password_challenge']['B'])
-      const authenticateResponse = await authClient.authenticateWithSRP('password')
-      assert.include(authenticateResponse['challenges'], 'SMS_CODE')
+      await authClient.startAuthentication('samuel')
+      const authenticateResponse = await authClient.authenticateWithPassword('password')
+      assert.include(authenticateResponse['challenges'], 'TIME_BASED_ONE_TIME_PASSWORD')
       assert.exists(authenticateResponse['temporary_token'])
       await authClient.startAuthenticateSMS()
       const authenticateSecondFactorResponse = await authClient.authenticateWithSMS('2147483647')

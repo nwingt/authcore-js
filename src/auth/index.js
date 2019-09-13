@@ -1,11 +1,9 @@
 // swagger wrapper
 const Swagger = require('swagger-client')
 
-const srp = require('../crypto/srp.js')
-const { scrypt } = require('../crypto/scrypt.js')
+const spake2 = require('../crypto/spake2.js')
 const { randomTOTPSecret } = require('../crypto/random.js')
 const formatBuffer = require('../utils/formatBuffer.js')
-const unicodeNorm = require('../utils/unicodeNorm.js')
 
 /**
  * The class interacting between web client and AuthCore AuthAPI server.
@@ -79,48 +77,51 @@ class AuthCoreAuthClient {
   async startAuthentication (handle) {
     const { AuthService } = this
 
-    const startAuthenticationResponse = await AuthService.StartAuthentication({
+    const startPasswordAuthnResponse = await AuthService.StartPasswordAuthn({
       'body': {
         'user_handle': handle
       }
     })
-    const startAuthenticationResBody = startAuthenticationResponse.body
+    const startPasswordAuthnResBody = startPasswordAuthnResponse.body
 
     this.handle = handle
-    this.temporaryToken = startAuthenticationResBody['temporary_token']
-    this._updateChallenges(startAuthenticationResBody)
+    this.temporaryToken = startPasswordAuthnResBody['temporary_token']
+    this._updateChallenges(startPasswordAuthnResBody)
 
-    return startAuthenticationResBody
+    return startPasswordAuthnResBody
   }
 
   /**
-   * Authenticates a user by secure remote password (SRP).
+   * Authenticates a user by password, under the SPAKE2+ protocol.
    * 
    * @public
    * @param {string} password The password of the user.
    * @returns {Promise<AuthenticationState>} The authentication state.
    */
-  async authenticateWithSRP (password) {
-    const { AuthService, handle, passwordChallenge, temporaryToken } = this
+  async authenticateWithPassword (password) {
+    const { AuthService, salt, temporaryToken } = this
 
-    const passwordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
-    const challengeToken = passwordChallenge['token']
-    const B = formatBuffer.fromBase64(passwordChallenge['B'])
+    const state = await spake2.spake2.startClient('authcoreuser', 'authcore', password, salt)
+    const message = state.getMessage()
+    const startAuthenticatePasswordResponse = await AuthService.PasswordAuthnKeyExchange({
+      'body': {
+        'temporary_token': temporaryToken,
+        'message': formatBuffer.toBase64(message)
+      }
+    })
+    const startAuthenticatePasswordResBody = startAuthenticatePasswordResponse.body
+    const incomingMessage = formatBuffer.fromBase64(startAuthenticatePasswordResBody['password_challenge']['message'])
+    const challengeToken = startAuthenticatePasswordResBody['password_challenge']['token']
 
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { A, M1 } = await srp.getAandM1(handle, hashedPassword, passwordSalt, B)
-    const authenticateResponse = await AuthService.Authenticate({
+    const sharedSecret = state.finish(incomingMessage)
+    const confirmation = sharedSecret.getConfirmation()
+
+    const authenticateResponse = await AuthService.FinishPasswordAuthn({
       'body': {
         'temporary_token': temporaryToken,
         'password_response': {
-          'challenge_token': challengeToken,
-          'M1': formatBuffer.toBase64(M1),
-          'A': formatBuffer.toBase64(A)
+          'token': challengeToken,
+          'confirmation': formatBuffer.toBase64(confirmation)
         }
       }
     })
@@ -341,18 +342,13 @@ class AuthCoreAuthClient {
     AuthService = this.AuthService
 
     // Step 2: Change the password of the created user
-    const hashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(password)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, hashedPassword)
-    await AuthService.ChangePassword({
+    const { salt, verifier } = await spake2.createVerifier(password)
+    await AuthService.FinishChangePassword({
       'body': {
         'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
+          'salt': salt,
+          'verifierW0': verifier.w0,
+          'verifierL': verifier.L
         }
       }
     })
@@ -437,38 +433,34 @@ class AuthCoreAuthClient {
   async changePassword (oldPassword, newPassword) {
     const { AuthService } = this
 
-    const { username } = await this.getCurrentUser()
-    const createPasswordChallengeResponse = await AuthService.CreatePasswordChallenge()
-    const passwordChallenge = createPasswordChallengeResponse.body
-    const oldPasswordSalt = formatBuffer.fromBase64(passwordChallenge['salt'])
-    const oldChallengeToken = passwordChallenge['token']
-    const oldB = formatBuffer.fromBase64(passwordChallenge['B'])
+    const startChangePasswordResponse = await AuthService.StartChangePassword()
+    const startChangePasswordResBody = startChangePasswordResponse.body
+    const oldSalt = formatBuffer.fromBase64(startChangePasswordResBody['salt'])
 
-    const oldHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(oldPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { A, M1 } = await srp.getAandM1(username, oldHashedPassword, oldPasswordSalt, oldB)
+    const oldState = await spake2.spake2.startClient('authcoreuser', 'authcore', oldPassword, oldSalt)
+    const oldMessage = oldState.getMessage()
+    const changePasswordKeyExchangeResponse = await AuthService.ChangePasswordKeyExchange({
+      'body': {
+        'message': formatBuffer.toBase64(oldMessage)
+      }
+    })
+    const changePasswordKeyExchangeResBody = changePasswordKeyExchangeResponse.body
+    const incomingMessage = formatBuffer.fromBase64(changePasswordKeyExchangeResBody['message'])
+    const oldChallengeToken = changePasswordKeyExchangeResBody['token']
 
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
-    await AuthService.ChangePassword({
+    const sharedSecret = oldState.finish(incomingMessage)
+    const confirmation = sharedSecret.getConfirmation()
+    const { salt, verifier } = await spake2.createVerifier(newPassword)
+    await AuthService.FinishChangePassword({
       'body': {
         'old_password_response': {
-          'challenge_token': oldChallengeToken,
-          'M1': formatBuffer.toBase64(M1),
-          'A': formatBuffer.toBase64(A),
+          'token': oldChallengeToken,
+          'confirmation': formatBuffer.toBase64(confirmation)
         },
         'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
+          'salt': salt,
+          'verifierW0': verifier.w0,
+          'verifierL': verifier.L
         }
       }
     })
@@ -906,22 +898,14 @@ class AuthCoreAuthClient {
   async resetPassword (resetPasswordToken, newPassword) {
     const { AuthService } = this
 
-    // In the current implementation, the username would not affect the password.
-    const username = ''
-
-    const newHashedPassword = await scrypt(
-      formatBuffer.fromString(unicodeNorm.normalize(newPassword)),
-      // TODO: Remove hardcoded parameters - https://gitlab.com/blocksq/kitty/issues/110
-      formatBuffer.fromString('salt?'),
-      16384, 8, 1
-    )
-    const { salt, verifier } = await srp.createVerifier(username, newHashedPassword)
+    const { salt, verifier } = await spake2.createVerifier(newPassword)
     await AuthService.ResetPassword({
       'body': {
         'token': resetPasswordToken,
         'password_verifier': {
-          'salt': formatBuffer.toBase64(salt),
-          'verifier': formatBuffer.toBase64(verifier)
+          'salt': salt,
+          'verifierW0': verifier.w0,
+          'verifierL': verifier.L
         }
       }
     })
@@ -1124,8 +1108,8 @@ class AuthCoreAuthClient {
 
     res['challenges'].forEach(challenge => {
       switch (challenge) {
-        case 'SECURE_REMOTE_PASSWORD':
-          this.passwordChallenge = res['password_challenge']
+        case 'PASSWORD':
+          this.salt = formatBuffer.fromBase64(res['password_salt'])
         break
         case 'TIME_BASED_ONE_TIME_PASSWORD': break
         case 'SMS_CODE': break
@@ -1148,8 +1132,7 @@ class AuthCoreAuthClient {
  *           completed.
  * @property {string[]} challenges The list of challenges that can be completed to continue the
  *           authentication flow.
- * @property {string} password_challenge The challenge for the secure remote password (SRP)
- *           protocol authentication.
+ * @property {object} password_challenge The challenge for the password under the SPAKE protocol.
  * @property {string} authorization_token The authorization token if the authentication flow is
  *           completed.
  */
