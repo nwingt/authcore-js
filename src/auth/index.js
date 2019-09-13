@@ -407,12 +407,11 @@ class AuthCoreAuthClient {
     // Step 2: Verify the contact by OAuth access token
     await AuthService.CompleteVerifyContact({
       'body': {
-        'contact': {
-          'type': 'EMAIL',
-          'value': email
-        },
-        'oauth_access_token': oauth.accessToken,
-        'service': oauth.service
+        'oauth_access_token': {
+          'access_token': oauth.accessToken,
+          'id_token': oauth.idToken,
+          'service': oauth.service
+        }
       }
     })
 
@@ -420,6 +419,7 @@ class AuthCoreAuthClient {
     await AuthService.CreateOAuthFactorByAccessToken({
       'body': {
         'access_token': oauth.accessToken,
+        'id_token': oauth.idToken,
         'service': oauth.service
       }
     })
