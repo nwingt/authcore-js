@@ -262,7 +262,7 @@ class AuthCoreWidget {
     dangerColour = this.buildColourCode(dangerColour)
     this.widget.src = `${options.root}/${name}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&language=${language}&internal=${internal}&requireUsername=${requireUsername}`
     if (typeof extraSetting === 'function') {
-      extraSetting({ logo, company, primaryColour, successColour, dangerColour, internal, verification })
+      extraSetting({ logo, company, primaryColour, successColour, dangerColour, internal, verification, requireUsername, language })
     }
   }
 }
@@ -329,12 +329,19 @@ class Contacts extends AuthCoreWidget {
 /**
  * The profile widget.
  *
+ * @param {boolean} [options.showAvatar=false] Boolean flag indicating to show avatar in profile.
+ *
  * @augments AuthCoreWidget
  */
 class Profile extends AuthCoreWidget {
   constructor (options) {
     super(options)
-    this.buildWidgetSrc(options, 'profile')
+    const {
+      showAvatar = false
+    } = options
+    this.buildWidgetSrc(options, 'profile', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification, requireUsername, language }) => {
+      this.widget.src = `${options.root}/profile?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&language=${language}&internal=${internal}&requireUsername=${requireUsername}&showAvatar=${showAvatar}`
+    })
   }
 }
 

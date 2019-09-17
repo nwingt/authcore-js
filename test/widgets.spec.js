@@ -538,6 +538,39 @@ suite('widgets.js', function () {
       })
     })
 
+    suite('Profile widget', function () {
+      test('default value of showAvatar should be false', async function () {
+        // Preparing
+        new AuthCoreWidgets.Profile({
+          container: 'authcore-profile-widget',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
+        assert.match(iframe.src, /showAvatar=false/)
+      })
+
+      test('should be able to set showAvatar parameter', async function () {
+        // Preparing
+        new AuthCoreWidgets.Profile({
+          container: 'authcore-profile-widget',
+          showAvatar: true,
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
+        assert.match(iframe.src, /showAvatar=true/)
+      })
+    })
+
     suite('Contacts widget', function () {
       test('should be able to mount an iframe with additional attributes', async function () {
         // Preparing
