@@ -267,33 +267,28 @@ class AuthCoreWidget {
   }
 }
 
-
-/**
- * The register widget.
- *
- * @augments AuthCoreWidget
- */
-class Register extends AuthCoreWidget {
-  constructor (options) {
-    super(options)
-    this.buildWidgetSrc(options, 'register', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
-      this.callbacks['_successRegister'] = (flags) => {
-        if (flags.verification !== undefined) verification = flags.verification
-        this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
-      }
-    })
-  }
-}
-
 /**
  * The login widget.
  *
+ * @param {boolean} [options.initialScreen] The screen that will be shown when the widget is opened.
  * @augments AuthCoreWidget
  */
 class Login extends AuthCoreWidget {
   constructor (options) {
     super(options)
-    this.buildWidgetSrc(options, 'signin', ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
+    const {
+      initialScreen = 'signin'
+    } = options
+    // Get default callback
+    const allowedInitialScreen = [
+      'signin',
+      'register'
+    ]
+
+    if (!allowedInitialScreen.includes(initialScreen)) {
+      throw new Error('initialScreen only support signin and register as input')
+    }
+    this.buildWidgetSrc(options, initialScreen, ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
       this.callbacks['_successRegister'] = (flags) => {
         if (flags.verification !== undefined) verification = flags.verification
         this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
@@ -419,7 +414,6 @@ class RefreshToken extends AuthCoreWidget {
 }
 
 const AuthCoreWidgets = {
-  Register,
   Login,
   Verification,
   Contacts,
