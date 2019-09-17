@@ -461,6 +461,22 @@ suite('widgets.js', function () {
         assert.match(iframe.src, /primaryColour=%230088FF/)
       })
 
+      test('should be able to pre-set contact', async function () {
+        // Preparing
+        const login = new AuthCoreWidgets.Login({
+          container: 'authcore-sign-in-widget',
+          contact: 'test@example.com',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
+        assert.match(iframe.src, /contact=test%40example.com/)
+      })
+
       test('default Login widget to have login as initial screen', async function () {
         // Preparing
         new AuthCoreWidgets.Login({
@@ -591,82 +607,82 @@ suite('widgets.js', function () {
           }
         }, '*')
       })
-    })
 
-    suite('Profile widget', function () {
-      test('default value of showAvatar should be false', async function () {
-        // Preparing
-        new AuthCoreWidgets.Profile({
-          container: 'authcore-profile-widget',
-          root: 'http://0.0.0.0:1337'
+      suite('Profile widget', function () {
+        test('default value of showAvatar should be false', async function () {
+          // Preparing
+          new AuthCoreWidgets.Profile({
+            container: 'authcore-profile-widget',
+            root: 'http://0.0.0.0:1337'
+          })
+
+          // Testing
+          const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+          assert.exists(iframe)
+
+          assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
+          assert.match(iframe.src, /showAvatar=false/)
         })
 
-        // Testing
-        const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
-        assert.exists(iframe)
+        test('should be able to set showAvatar parameter', async function () {
+          // Preparing
+          new AuthCoreWidgets.Profile({
+            container: 'authcore-profile-widget',
+            showAvatar: true,
+            root: 'http://0.0.0.0:1337'
+          })
 
-        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
-        assert.match(iframe.src, /showAvatar=false/)
-      })
+          // Testing
+          const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
+          assert.exists(iframe)
 
-      test('should be able to set showAvatar parameter', async function () {
-        // Preparing
-        new AuthCoreWidgets.Profile({
-          container: 'authcore-profile-widget',
-          showAvatar: true,
-          root: 'http://0.0.0.0:1337'
+          assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
+          assert.match(iframe.src, /showAvatar=true/)
         })
-
-        // Testing
-        const iframe = document.getElementById('authcore-profile-widget').getElementsByTagName('iframe')[0]
-        assert.exists(iframe)
-
-        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/profile/)
-        assert.match(iframe.src, /showAvatar=true/)
       })
-    })
 
-    suite('Contacts widget', function () {
-      test('should be able to mount an iframe with additional attributes', async function () {
-        // Preparing
-        new AuthCoreWidgets.Contacts({
-          container: 'authcore-contacts-widget',
-          root: 'http://0.0.0.0:1337'
+      suite('Contacts widget', function () {
+        test('should be able to mount an iframe with additional attributes', async function () {
+          // Preparing
+          new AuthCoreWidgets.Contacts({
+            container: 'authcore-contacts-widget',
+            root: 'http://0.0.0.0:1337'
+          })
+
+          // Testing
+          const iframe = document.getElementById('authcore-contacts-widget').getElementsByTagName('iframe')[0]
+          assert.exists(iframe)
+
+          assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/contacts/)
         })
-
-        // Testing
-        const iframe = document.getElementById('authcore-contacts-widget').getElementsByTagName('iframe')[0]
-        assert.exists(iframe)
-
-        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/contacts/)
       })
-    })
 
-    suite('Settings widget', function () {
-      test('should be able to monut an iframe', async function () {
-        // Preparing
-        new AuthCoreWidgets.Settings({
-          container: 'authcore-settings-widget',
-          root: 'http://0.0.0.0:1337'
+      suite('Settings widget', function () {
+        test('should be able to monut an iframe', async function () {
+          // Preparing
+          new AuthCoreWidgets.Settings({
+            container: 'authcore-settings-widget',
+            root: 'http://0.0.0.0:1337'
+          })
+
+          // Testing
+          const iframe = document.getElementById('authcore-settings-widget').getElementsByTagName('iframe')[0]
+          assert.exists(iframe)
+
+          assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/settings/)
         })
-
-        // Testing
-        const iframe = document.getElementById('authcore-settings-widget').getElementsByTagName('iframe')[0]
-        assert.exists(iframe)
-
-        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/settings/)
       })
-    })
 
-    suite('RefreshToken widget', function () {
-      test('should be able to mount an iframe', async function () {
-        // Preparing
-        new AuthCoreWidgets.RefreshToken({})
+      suite('RefreshToken widget', function () {
+        test('should be able to mount an iframe', async function () {
+          // Preparing
+          new AuthCoreWidgets.RefreshToken({})
 
-        // Testing
-        const iframe = document.getElementsByTagName('iframe')[0]
-        assert.exists(iframe)
-        assert.equal(iframe.style.display, 'none')
+          // Testing
+          const iframe = document.getElementsByTagName('iframe')[0]
+          assert.exists(iframe)
+          assert.equal(iframe.style.display, 'none')
+        })
       })
     })
   })
