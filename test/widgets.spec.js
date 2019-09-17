@@ -247,7 +247,7 @@ suite('widgets.js', function () {
     suite('requireUsername parameter setting for widget', function () {
       test('should not require username by default', async function () {
         // Preparing
-        new AuthCoreWidgets.Register({
+        new AuthCoreWidgets.Login({
           container: 'authcore-register-widget',
           root: 'http://0.0.0.0:1337'
         })
@@ -261,7 +261,7 @@ suite('widgets.js', function () {
 
       test('should all to require username', async function () {
         // Preparing
-        new AuthCoreWidgets.Register({
+        new AuthCoreWidgets.Login({
           container: 'authcore-register-widget',
           root: 'http://0.0.0.0:1337',
           requireUsername: true
@@ -390,11 +390,12 @@ suite('widgets.js', function () {
       })
     })
 
-    suite('Register widget', function () {
+    suite('Login widget', function () {
       test('should be able to have register widget with successRegister callback', function (done) {
         // Preparing
-        const register = new AuthCoreWidgets.Register({
+        const register = new AuthCoreWidgets.Login({
           container: 'authcore-register-widget',
+          initialScreen: 'register',
           root: 'http://0.0.0.0:1337'
         })
 
@@ -418,8 +419,9 @@ suite('widgets.js', function () {
 
       test('should be able to mount an iframe with verification attribute', async function () {
         // Preparing
-        new AuthCoreWidgets.Register({
+        new AuthCoreWidgets.Login({
           container: 'authcore-register-widget',
+          initialScreen: 'register',
           root: 'http://0.0.0.0:1337',
           verification: false
         })
@@ -435,7 +437,7 @@ suite('widgets.js', function () {
       test('should return error with non-boolean verification attribute', async function () {
         // Testing
         assert.throws(() => {
-          new AuthCoreWidgets.Register({
+          new AuthCoreWidgets.Login({
             container: 'authcore-register-widget',
             root: 'http://0.0.0.0:1337',
             verification: 'test'
@@ -445,8 +447,9 @@ suite('widgets.js', function () {
 
       test('should be able to set primary colour for Register widget', async function () {
         // Preparing
-        const widget = new AuthCoreWidgets.Register({
+        const widget = new AuthCoreWidgets.Login({
           container: 'authcore-register-widget',
+          initialScreen: 'register',
           primaryColour: '#0088ff',
           root: 'http://0.0.0.0:1337'
         })
@@ -457,9 +460,61 @@ suite('widgets.js', function () {
 
         assert.match(iframe.src, /primaryColour=%230088FF/)
       })
-    })
 
-    suite('Login widget', function () {
+      test('default Login widget to have login as initial screen', async function () {
+        // Preparing
+        new AuthCoreWidgets.Login({
+          container: 'authcore-sign-in-widget',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
+      })
+
+      test('allow to set signin as initial screen using initialScreen parameter', async function () {
+        // Preparing
+        new AuthCoreWidgets.Login({
+          container: 'authcore-sign-in-widget',
+          initialScreen: 'signin',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/signin/)
+      })
+
+      test('allow to set register as initial screen using initialScreen parameter', async function () {
+        // Preparing
+        new AuthCoreWidgets.Login({
+          container: 'authcore-sign-in-widget',
+          initialScreen: 'register',
+          root: 'http://0.0.0.0:1337'
+        })
+
+        // Testing
+        const iframe = document.getElementById('authcore-sign-in-widget').getElementsByTagName('iframe')[0]
+        assert.exists(iframe)
+
+        assert.match(iframe.src, /^http:\/\/0.0.0.0:1337\/register/)
+      })
+
+      test('not allow to set other parameter as initial screen', async function () {
+        assert.throws(() => {
+          new AuthCoreWidgets.Login({
+            container: 'authcore-sign-in-widget',
+            initialScreen: 'notallow',
+            root: 'http://0.0.0.0:1337'
+          })
+        }, Error, 'initialScreen only support signin and register as input')
+      })
+
       test('should be able to have login widget with successRegister callback', function (done) {
         // Preparing
         const login = new AuthCoreWidgets.Login({
