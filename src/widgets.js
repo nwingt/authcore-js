@@ -279,7 +279,6 @@ class Login extends AuthCoreWidget {
     const {
       initialScreen = 'signin'
     } = options
-    // Get default callback
     const allowedInitialScreen = [
       'signin',
       'register'
@@ -288,7 +287,12 @@ class Login extends AuthCoreWidget {
     if (!allowedInitialScreen.includes(initialScreen)) {
       throw new Error('initialScreen only support signin and register as input')
     }
-    this.buildWidgetSrc(options, initialScreen, ({ logo, company, primaryColour, successColour, dangerColour, internal, verification }) => {
+    let {
+      contact = undefined
+    } = options
+    contact = encodeURIComponent(contact)
+    this.buildWidgetSrc(options, initialScreen, ({ logo, company, primaryColour, successColour, dangerColour, internal, verification, requireUsername, language }) => {
+      this.widget.src = `${options.root}/${initialScreen}?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&language=${language}&internal=${internal}&requireUsername=${requireUsername}&verification=${verification}&contact=${contact}`
       this.callbacks['_successRegister'] = (flags) => {
         if (flags.verification !== undefined) verification = flags.verification
         this.widget.src = `${options.root}/verification?logo=${logo}&company=${company}&cid=${this.containerId}&primaryColour=${primaryColour}&successColour=${successColour}&dangerColour=${dangerColour}&internal=${internal}&verification=${verification}`
