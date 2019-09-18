@@ -285,13 +285,14 @@ class AuthCoreAuthClient {
   async updateCurrentUser (user) {
     const { AuthService } = this
 
-    const currentUser = await AuthService.UpdateCurrentUser({
+    const updateCurrentUserResponse = await AuthService.UpdateCurrentUser({
       'body': {
         'user': user
       }
     })
+    const updateCurrentUserResBody = updateCurrentUserResponse.body
 
-    return currentUser
+    return updateCurrentUserResBody
   }
 
   /**
