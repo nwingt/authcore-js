@@ -7,7 +7,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
 
 /**
  * The class interacting between web client and AuthCore AuthAPI server.
- * 
+ *
  * @public
  * @param {object} config
  * @param {string} config.apiBaseURL The base URL for the Authcore instance.
@@ -29,7 +29,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
  */
 class AuthCoreAuthClient {
   constructor (config) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
       this.config = config
 
       this.temporaryToken = undefined
@@ -46,7 +46,7 @@ class AuthCoreAuthClient {
 
   /**
    * Sets the access token and refreshes the Swagger client.
-   * 
+   *
    * @public
    * @param {string} accessToken The access token of the user.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
@@ -58,7 +58,7 @@ class AuthCoreAuthClient {
 
   /**
    * Gets the access token.
-   * 
+   *
    * @public
    * @returns {string} The access token of the user.
    */
@@ -66,10 +66,9 @@ class AuthCoreAuthClient {
     return this.config.accessToken
   }
 
-
   /**
    * Creates a new authentication flow by requesting a password challenge from the server.
-   * 
+   *
    * @public
    * @param {string} handle A handle of a user. Could be username, email address or phone number.
    * @returns {Promise<AuthenticationState>} The authentication state.
@@ -93,7 +92,7 @@ class AuthCoreAuthClient {
 
   /**
    * Authenticates a user by password, under the SPAKE2+ protocol.
-   * 
+   *
    * @public
    * @param {string} password The password of the user.
    * @returns {Promise<AuthenticationState>} The authentication state.
@@ -133,7 +132,7 @@ class AuthCoreAuthClient {
 
   /**
    * Authenticates a user by time-based one time password (TOTP).
-   * 
+   *
    * @public
    * @param {string} pin The PIN received in the authenticator device of the user.
    * @returns {Promise<AuthenticationState>} The authentication state.
@@ -156,7 +155,7 @@ class AuthCoreAuthClient {
 
   /**
    * Requests a SMS for the second-factor authentication using SMS.
-   * 
+   *
    * @public
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
@@ -172,7 +171,7 @@ class AuthCoreAuthClient {
 
   /**
    * Authenticates a user by verifying the authentication code from SMS.
-   * 
+   *
    * @public
    * @param {string} code The SMS code received by the authenticating phone number of the user.
    * @returns {Promise<AuthenticationState>} The authentication state.
@@ -195,7 +194,7 @@ class AuthCoreAuthClient {
 
   /**
    * Authenticates a user by the backup code.
-   * 
+   *
    * @public
    * @param {string} code The backup code of the user.
    * @returns {Promise<AuthenticationState>} The authentication state.
@@ -218,7 +217,7 @@ class AuthCoreAuthClient {
 
   /**
    * Creates an access token from the authorization token.
-   * 
+   *
    * @public
    * @param {string} authorizationToken A one-use token that is used to generate refresh token and
    *        access token.
@@ -241,7 +240,7 @@ class AuthCoreAuthClient {
 
   /**
    * Creates an access token from refresh token.
-   * 
+   *
    * @public
    * @param {string} refreshToken A token that can be repeatedly generate access tokens.
    * @returns {Promise<AccessToken>} The access token.
@@ -505,7 +504,7 @@ class AuthCoreAuthClient {
       'body': {
         'totp_info': {
           'identifier': identifier,
-          'secret': totpSecret,
+          'secret': totpSecret
         },
         'answer': totpPin
       }
@@ -865,7 +864,7 @@ class AuthCoreAuthClient {
 
   /**
    * Authenticates a user by contact token for resetting password.
-   * 
+   *
    * @public
    * @param {string} token The contact token for reset password.
    * @returns {Promise<object>} The authentication state for reset password.
@@ -889,7 +888,7 @@ class AuthCoreAuthClient {
 
   /**
    * Resets a user password given the reset password token and the new password.
-   * 
+   *
    * @public
    * @param {string} resetPasswordToken An one-use token that is used to reset password.
    * @param {string} newPassword The new password of the user.
@@ -932,7 +931,7 @@ class AuthCoreAuthClient {
   /**
    * Validates the OAuth parameters on the client for the authorization request stated in
    * [Section 4.1.2 of RFC6749](https://tools.ietf.org/html/rfc6749#section-4). Throws error if the.
-   * 
+   *
    * @public
    * @param {string} service The external OAuth service used.
    * @param {string} state An opaque value used by the client to maintain the state between the
@@ -994,7 +993,7 @@ class AuthCoreAuthClient {
 
   /**
    * Creates a OAuth factor by the response of the OAuth response.
-   * 
+   *
    * @public
    * @param {string} service The external OAuth service used.
    * @param {string} state An opaque value used by the client to maintain the state between the
@@ -1032,7 +1031,7 @@ class AuthCoreAuthClient {
 
   /**
    * Signs out from the current session.
-   * 
+   *
    * @public
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
@@ -1095,7 +1094,7 @@ class AuthCoreAuthClient {
   /**
    * Updates the challenge to the class instance, given the `AuthenticationState` entity defined by
    * the protocol buffers.
-   * 
+   *
    * @private
    * @param {object} res A response body from the authentication flow. Equivalently the
    *        `AuthenticationState` entity defined by the protocol buffers.
@@ -1110,7 +1109,7 @@ class AuthCoreAuthClient {
       switch (challenge) {
         case 'PASSWORD':
           this.salt = formatBuffer.fromBase64(res['password_salt'])
-        break
+          break
         case 'TIME_BASED_ONE_TIME_PASSWORD': break
         case 'SMS_CODE': break
         case 'CONTACT_TOKEN': break
@@ -1145,7 +1144,6 @@ class AuthCoreAuthClient {
  * @property {string} token_type The token type.
  * @property {string} expires_in The lifetime (in seconds) of the access token.
  */
-
 
 /**
  * @typedef {object} Metadata

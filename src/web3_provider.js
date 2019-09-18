@@ -10,7 +10,7 @@ const formatBuffer = require('./utils/formatBuffer')
 
 /**
  * The Authcore-integrated web3 wallet subprovider.
- * 
+ *
  * @public
  * @param {object} config The config object.
  * @param {AuthCoreKeyVaultClient} config.authcoreClient The KeyVaultClient instance for the API
@@ -20,7 +20,7 @@ const formatBuffer = require('./utils/formatBuffer')
  * @param {number} [config.accountCount=1] The number of accounts.
  * @param {number} [config.chainId=1] The chain ID.
  * @param {string} config.container The ID of the DOM element that injects the widget.
- * @returns {HookedWalletSubprovider} Hooked wallet subprovider defined by the 
+ * @returns {HookedWalletSubprovider} Hooked wallet subprovider defined by the
  *          [MetaMask/web3-provider-engine](https://github.com/MetaMask/web3-provider-engine/)
  *          repository.
  */
@@ -35,13 +35,14 @@ function AuthCoreWalletSubprovider (config) {
 
   /**
    * Lists the owned accounts.
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function getAccounts (cb) {
-    let error = null, res
+    let error = null
+    let res = null
     try {
       const publicKeys = await authcoreClient.listHDChildPublicKeys(pathPrefix)
       addresses = []
@@ -67,7 +68,6 @@ function AuthCoreWalletSubprovider (config) {
     } catch (err) {
       console.error(err)
       error = err
-      res = null
     }
     cb(error, res)
   }
@@ -75,14 +75,14 @@ function AuthCoreWalletSubprovider (config) {
   /**
    * Creates an Authcore widget for the user to approve signing an Ethereum transaction (or
    * message).
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {string} type The type of the payload.
    * @returns {Function} Wrapper function for approve.
    */
   function approve (type) {
     return function (txObject, cb) {
-      new AuthCoreWidgets.EthereumSignApproval({
+      new AuthCoreWidgets.EthereumSignApproval({ // eslint-disable-line no-new
         container,
         root: authcoreWidgetsUrl,
         accessToken: authcoreClient.getAccessToken(),
@@ -94,21 +94,29 @@ function AuthCoreWalletSubprovider (config) {
 
   /**
    * Signs a transaction.
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {object} txObject The transaction object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signTransaction (txObject, cb) {
-    let error = null, res
+    let error = null
+    let res = null
     try {
       const { nonce, gasPrice, gas: gasLimit, from, to, value } = txObject
       const data = '0x'
 
       const tx = new EthereumTx({
-        nonce, gasPrice, gasLimit, to, value, data,
-        v: chainId, r: '', s: ''
+        nonce,
+        gasPrice,
+        gasLimit,
+        to,
+        value,
+        data,
+        v: chainId,
+        r: '',
+        s: ''
       })
       const txData = tx.serialize()
       const { id: objectId, path } = addresses.find(addressObj => addressObj['address'].toLowerCase() === from.toLowerCase())
@@ -128,21 +136,21 @@ function AuthCoreWalletSubprovider (config) {
     } catch (err) {
       console.error(err)
       error = err
-      res = null
     }
     cb(error, res)
   }
 
   /**
    * Signs a message.
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signMessage (msgObject, cb) {
-    let error = null, res
+    let error = null
+    let res = null
     try {
       const { from, data } = msgObject
       const { id: objectId, path } = addresses.find(addressObj => addressObj['address'].toLowerCase() === from.toLowerCase())
@@ -153,21 +161,21 @@ function AuthCoreWalletSubprovider (config) {
     } catch (err) {
       console.error(err)
       error = err
-      res = null
     }
     cb(error, res)
   }
 
   /**
    * Signs a personal message.
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signPersonalMessage (msgObject, cb) {
-    let error = null, res
+    let error = null
+    let res = null
     try {
       const { from, data } = msgObject
       const { id: objectId, path } = addresses.find(addressObj => addressObj['address'].toLowerCase() === from.toLowerCase())
@@ -178,21 +186,21 @@ function AuthCoreWalletSubprovider (config) {
     } catch (err) {
       console.error(err)
       error = err
-      res = null
     }
     cb(error, res)
   }
 
   /**
    * Signs a typed message (version 1 for `eth_signTypedData`).
-   * 
+   *
    * @memberof AuthCoreWalletSubprovider
    * @param {object} msgObject The message object.
    * @param {Function} cb Callback function defined by the HookedWalletSubprovider.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
   async function signTypedMessage (msgObject, cb) {
-    let error = null, res
+    let error = null
+    let res = null
     try {
       const { from, data } = msgObject
       const { id: objectId, path } = addresses.find(addressObj => addressObj['address'].toLowerCase() === from.toLowerCase())
@@ -203,7 +211,6 @@ function AuthCoreWalletSubprovider (config) {
     } catch (err) {
       console.error(err)
       error = err
-      res = null
     }
     cb(error, res)
   }

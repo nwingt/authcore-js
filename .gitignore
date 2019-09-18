@@ -80,6 +80,6 @@ typings/
 .fusebox/
 
 # documentation build output
-/doc
+/jsdoc.md
 
 .package-alias.json

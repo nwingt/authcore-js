@@ -1,0 +1,21 @@
+toc:
+  - AuthCoreWidget
+  - AuthCoreAuthClient
+  - AuthCoreManagementClient
+  - AuthCoreKeyVaultClient
+  - AuthCoreCosmosProvider
+  - AuthCoreWalletSubprovider
+  - name: Objects
+    children:
+    - AuthenticationState
+    - AccessToken
+    - Metadata
+    - Register
+    - Login
+    - Verification
+    - Contacts
+    - Profile
+    - Settings
+    - EthereumSignApproval
+    - CosmosSignApproval
+    - RefreshToken
