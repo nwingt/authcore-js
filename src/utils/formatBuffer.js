@@ -37,7 +37,7 @@ function fromBigNumber (int) {
  * @param {string} hex Hexadecimal string to-be converted.
  * @example
  * fromHex('48656c6c6f20776f726c64')
- * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64> 
+ * // returns <Buffer 48 65 6c 6c 6f 20 77 6f 72 6c 64>
  * @returns {Buffer} The buffer that is converted from the hexadecimal string.
  */
 function fromHex (hex) {
@@ -94,7 +94,7 @@ function fromUint8Array (arr) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toString(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toString(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns 'Hello world'
  * @returns {string} The string that is converted from the buffer.
  */
@@ -108,7 +108,7 @@ function toString (buf) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toBigNumber(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toBigNumber(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns '87521618088882671231069284'
  * @returns {BigNumber} The integer that is converted from the buffer.
  */
@@ -122,7 +122,7 @@ function toBigNumber (buf) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toHex(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toHex(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns '48656c6c6f20776f726c64'
  * @returns {string} The hexadecimal string that is converted from the buffer.
  */
@@ -136,7 +136,7 @@ function toHex (buf) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toBase64(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toBase64(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns 'SGVsbG8gd29ybGQ='
  * @returns {string} The base64-encoded string that is converted from the buffer.
  */
@@ -150,7 +150,7 @@ function toBase64 (buf) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toBase64URLSafe(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toBase64URLSafe(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns 'SGVsbG8gd29ybGQ'
  * @returns {string} The URL-safe base64-encoded string that is converted from the buffer.
  */
@@ -164,7 +164,7 @@ function toBase64URLSafe (buf) {
  * @private
  * @param {Buffer} buf Buffer to-be converted.
  * @example
- * toUint8Array(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64])) 
+ * toUint8Array(Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64]))
  * // returns [72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100]
  * @returns {Uint8Array} The uint8 array that is converted from the buffer.
  */

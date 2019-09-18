@@ -5,7 +5,7 @@ const spake2 = require('../crypto/spake2.js')
 
 /**
  * The class interacting between web client and AuthCore ManagementAPI server.
- * 
+ *
  * @public
  * @param {object} config
  * @param {string} config.apiBaseURL The base URL for the Authcore instance.
@@ -27,7 +27,7 @@ const spake2 = require('../crypto/spake2.js')
  */
 class AuthCoreManagementClient {
   constructor (config) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
       this.config = config
 
       // Set accessToken into API
@@ -39,7 +39,7 @@ class AuthCoreManagementClient {
 
   /**
    * Sets the access token and refreshes the Swagger client.
-   * 
+   *
    * @public
    * @param {string} accessToken The access token of the user.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
@@ -51,7 +51,7 @@ class AuthCoreManagementClient {
 
   /**
    * Gets the access token.
-   * 
+   *
    * @public
    * @returns {string} The access token of the user.
    */
@@ -343,7 +343,7 @@ class AuthCoreManagementClient {
 
   /**
    * Creates a new role.
-   * 
+   *
    * @param {string} name The name of the role.
    * @returns {Promise<object>} The role object.
    */
@@ -361,7 +361,7 @@ class AuthCoreManagementClient {
 
   /**
    * Deletes a role.
-   * 
+   *
    * @param {string} roleId The ID of the role to-be deleted.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
    */
@@ -374,7 +374,7 @@ class AuthCoreManagementClient {
 
   /**
    * Assigns the specified role to the given user.
-   * 
+   *
    * @param {string} userId The user ID.
    * @param {string} roleId The role ID.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
@@ -391,7 +391,7 @@ class AuthCoreManagementClient {
 
   /**
    * Unassigns the specified role from the given user.
-   * 
+   *
    * @param {string} userId The user ID.
    * @param {string} roleId The role ID.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.

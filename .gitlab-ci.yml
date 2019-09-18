@@ -45,10 +45,9 @@ pages:
     - yarn install
   script:
     - yarn run doc
-    - mv doc public
   artifacts:
     paths:
-      - public
+      - jsdoc.md
   cache:
     key: ${CI_JOB_NAME}
     paths:

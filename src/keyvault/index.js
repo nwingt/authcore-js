@@ -5,7 +5,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
 
 /**
  * The class interacting between web client and AuthCore KeyVaultAPI server.
- * 
+ *
  * @public
  * @param {object} config
  * @param {string} config.apiBaseURL The base URL for the Authcore instance.
@@ -27,7 +27,7 @@ const formatBuffer = require('../utils/formatBuffer.js')
  */
 class AuthCoreKeyVaultClient {
   constructor (config) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => { // eslint-disable-line no-async-promise-executor
       this.config = config
 
       // Set accessToken into API
@@ -39,7 +39,7 @@ class AuthCoreKeyVaultClient {
 
   /**
    * Sets the access token and refreshes the Swagger client.
-   * 
+   *
    * @public
    * @param {string} accessToken The access token of the user.
    * @returns {Promise<undefined>} Undefined when succeed, throws an error when failed.
@@ -51,7 +51,7 @@ class AuthCoreKeyVaultClient {
 
   /**
    * Gets the access token.
-   * 
+   *
    * @public
    * @returns {string} The access token of the user.
    */
@@ -85,7 +85,7 @@ class AuthCoreKeyVaultClient {
    * [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki),
    * [BIP-0039](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) and
    * [BIP-0044](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki).
-   * 
+   *
    * @param {string} pathPrefix The prefix of the derivation path.
    * @returns {Promise<string[]>} The HD child public keys.
    */

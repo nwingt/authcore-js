@@ -9,7 +9,7 @@ const { AuthCoreWidgets } = require('./widgets')
 
 /**
  * The Cosmos wallet provider.
- * 
+ *
  * @public
  * @param {object} config
  * @param {AuthCoreKeyVaultClient} config.authcoreClient The KeyVaultClient instance for the API
@@ -35,7 +35,7 @@ class AuthCoreCosmosProvider {
 
   /**
    * Lists the wallets.
-   * 
+   *
    * @private
    * @returns {Promise<string[]>} The list of wallets.
    */
@@ -73,10 +73,10 @@ class AuthCoreCosmosProvider {
     const addresses = wallets.map(wallet => wallet.address)
     return addresses
   }
-  
+
   /**
    * Lists the owned public keys.
-   * 
+   *
    * @returns {Promise<string[]>} The list of owned public keys.
    */
   async getPublicKeys () {
@@ -87,7 +87,7 @@ class AuthCoreCosmosProvider {
 
   /**
    * Creates an Authcore widget for the user to approve signing an Cosmos payload.
-   * 
+   *
    * @param {object} data The payload to be broadcasted, with signature missing.
    * @param {object[]} data.msgs The message object.
    * @param {object} data.fee The fee object.
@@ -104,20 +104,20 @@ class AuthCoreCosmosProvider {
     const that = this
 
     const dataWithSign = await new Promise((resolve, reject) => {
-      new AuthCoreWidgets.CosmosSignApproval({
+      new AuthCoreWidgets.CosmosSignApproval({ // eslint-disable-line no-new
         container,
         root: authcoreWidgetsUrl,
         accessToken: authcoreClient.getAccessToken(),
         approve: () => resolve(that.sign(data, address)),
-        reject: () => reject('user has rejected the signing request')
+        reject: () => reject(new Error('user has rejected the signing request'))
       })
     })
     return dataWithSign
   }
-  
+
   /**
    * Signs a payload.
-   * 
+   *
    * @param {object} data The payload to be broadcasted, with signature missing.
    * @param {object[]} data.msgs The message object.
    * @param {object} data.fee The fee object.
@@ -145,7 +145,7 @@ class AuthCoreCosmosProvider {
 
     let dataWithSign = _.cloneDeep(data)
     dataWithSign['signatures'] = dataWithSign['signatures'] || []
-    
+
     const signature = {
       'pub_key': {
         'type': 'tendermint/PubKeySecp256k1',
