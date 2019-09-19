@@ -36,7 +36,7 @@ audit:
     - ./audit.sh
   allow_failure: true
 
-pages:
+docs:
   stage: publish
   image: node:lts
   except:
