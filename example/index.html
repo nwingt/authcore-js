@@ -1,12 +1,33 @@
 <html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
   <body>
     <div id="authcore-sign-in-widget"></div>
     <script src="../build/main.js"></script>
     <script type="module">
+    function postMessage(type, data) {
+      var message = { type: type }
+      if (data) {
+        message.data = data
+      }
+      if (window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(JSON.stringify(message));
+      }
+    }
     new AuthCoreWidgets.Login({
       // Set to local Authcore instance hosted using Docker
-      root: 'http://0.0.0.0:8000/widgets',
-      container: 'authcore-sign-in-widget'
+      root: 'https://likecoin-integration-test.authcore.io/widgets',
+      container: 'authcore-sign-in-widget',
+      onSuccess(data) {
+        postMessage('success', data)
+      },
+      onLoaded() {
+        postMessage('loaded')
+      },
+      unauthenticated(err) {
+        postMessage('error', { message: err.message })
+      },
     })
     </script>
   </body>
